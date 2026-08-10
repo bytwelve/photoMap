@@ -1,0 +1,2479 @@
+{
+  "schemaVersion": 1,
+  "dataVersion": "geojson-sha256:3af8294f9ad61cc2bf84c1bb7e4bbf86a6336c68d754b699a0e6ddc33ef81486+d7a6f05b7e58cf758d74bd71ed0ea2ce981ef99436e4881e9a68098c3cd80b3b",
+  "provenance": {
+    "sourcePageUrl": "https://cloudcenter.tianditu.gov.cn/administrativeDivision",
+    "generatedFrom": [
+      {
+        "level": "province",
+        "fileName": "china-provinces.geojson",
+        "byteLength": 1698398,
+        "sha256": "3af8294f9ad61cc2bf84c1bb7e4bbf86a6336c68d754b699a0e6ddc33ef81486"
+      },
+      {
+        "level": "city",
+        "fileName": "china-city-view.geojson",
+        "byteLength": 4265699,
+        "sha256": "d7a6f05b7e58cf758d74bd71ed0ea2ce981ef99436e4881e9a68098c3cd80b3b"
+      }
+    ],
+    "ordering": "province-code-ascending-then-city-code-ascending",
+    "excludedFeatureName": "境界线"
+  },
+  "regions": [
+    {
+      "level": "province",
+      "code": "156110000",
+      "name": "北京市",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156120000",
+      "name": "天津市",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156130000",
+      "name": "河北省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156140000",
+      "name": "山西省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156150000",
+      "name": "内蒙古自治区",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156210000",
+      "name": "辽宁省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156220000",
+      "name": "吉林省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156230000",
+      "name": "黑龙江省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156310000",
+      "name": "上海市",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156320000",
+      "name": "江苏省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156330000",
+      "name": "浙江省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156340000",
+      "name": "安徽省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156350000",
+      "name": "福建省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156360000",
+      "name": "江西省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156370000",
+      "name": "山东省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156410000",
+      "name": "河南省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156420000",
+      "name": "湖北省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156430000",
+      "name": "湖南省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156440000",
+      "name": "广东省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156450000",
+      "name": "广西壮族自治区",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156460000",
+      "name": "海南省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156500000",
+      "name": "重庆市",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156510000",
+      "name": "四川省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156520000",
+      "name": "贵州省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156530000",
+      "name": "云南省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156540000",
+      "name": "西藏自治区",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156610000",
+      "name": "陕西省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156620000",
+      "name": "甘肃省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156630000",
+      "name": "青海省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156640000",
+      "name": "宁夏回族自治区",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156650000",
+      "name": "新疆维吾尔自治区",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156710000",
+      "name": "台湾省",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156810000",
+      "name": "香港特别行政区",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "province",
+      "code": "156820000",
+      "name": "澳门特别行政区",
+      "parentProvinceCode": null
+    },
+    {
+      "level": "city",
+      "code": "156110000",
+      "name": "北京市",
+      "parentProvinceCode": "156110000"
+    },
+    {
+      "level": "city",
+      "code": "156120000",
+      "name": "天津市",
+      "parentProvinceCode": "156120000"
+    },
+    {
+      "level": "city",
+      "code": "156130100",
+      "name": "石家庄市",
+      "parentProvinceCode": "156130000"
+    },
+    {
+      "level": "city",
+      "code": "156130200",
+      "name": "唐山市",
+      "parentProvinceCode": "156130000"
+    },
+    {
+      "level": "city",
+      "code": "156130300",
+      "name": "秦皇岛市",
+      "parentProvinceCode": "156130000"
+    },
+    {
+      "level": "city",
+      "code": "156130400",
+      "name": "邯郸市",
+      "parentProvinceCode": "156130000"
+    },
+    {
+      "level": "city",
+      "code": "156130500",
+      "name": "邢台市",
+      "parentProvinceCode": "156130000"
+    },
+    {
+      "level": "city",
+      "code": "156130600",
+      "name": "保定市",
+      "parentProvinceCode": "156130000"
+    },
+    {
+      "level": "city",
+      "code": "156130700",
+      "name": "张家口市",
+      "parentProvinceCode": "156130000"
+    },
+    {
+      "level": "city",
+      "code": "156130800",
+      "name": "承德市",
+      "parentProvinceCode": "156130000"
+    },
+    {
+      "level": "city",
+      "code": "156130900",
+      "name": "沧州市",
+      "parentProvinceCode": "156130000"
+    },
+    {
+      "level": "city",
+      "code": "156131000",
+      "name": "廊坊市",
+      "parentProvinceCode": "156130000"
+    },
+    {
+      "level": "city",
+      "code": "156131100",
+      "name": "衡水市",
+      "parentProvinceCode": "156130000"
+    },
+    {
+      "level": "city",
+      "code": "156140100",
+      "name": "太原市",
+      "parentProvinceCode": "156140000"
+    },
+    {
+      "level": "city",
+      "code": "156140200",
+      "name": "大同市",
+      "parentProvinceCode": "156140000"
+    },
+    {
+      "level": "city",
+      "code": "156140300",
+      "name": "阳泉市",
+      "parentProvinceCode": "156140000"
+    },
+    {
+      "level": "city",
+      "code": "156140400",
+      "name": "长治市",
+      "parentProvinceCode": "156140000"
+    },
+    {
+      "level": "city",
+      "code": "156140500",
+      "name": "晋城市",
+      "parentProvinceCode": "156140000"
+    },
+    {
+      "level": "city",
+      "code": "156140600",
+      "name": "朔州市",
+      "parentProvinceCode": "156140000"
+    },
+    {
+      "level": "city",
+      "code": "156140700",
+      "name": "晋中市",
+      "parentProvinceCode": "156140000"
+    },
+    {
+      "level": "city",
+      "code": "156140800",
+      "name": "运城市",
+      "parentProvinceCode": "156140000"
+    },
+    {
+      "level": "city",
+      "code": "156140900",
+      "name": "忻州市",
+      "parentProvinceCode": "156140000"
+    },
+    {
+      "level": "city",
+      "code": "156141000",
+      "name": "临汾市",
+      "parentProvinceCode": "156140000"
+    },
+    {
+      "level": "city",
+      "code": "156141100",
+      "name": "吕梁市",
+      "parentProvinceCode": "156140000"
+    },
+    {
+      "level": "city",
+      "code": "156150100",
+      "name": "呼和浩特市",
+      "parentProvinceCode": "156150000"
+    },
+    {
+      "level": "city",
+      "code": "156150200",
+      "name": "包头市",
+      "parentProvinceCode": "156150000"
+    },
+    {
+      "level": "city",
+      "code": "156150300",
+      "name": "乌海市",
+      "parentProvinceCode": "156150000"
+    },
+    {
+      "level": "city",
+      "code": "156150400",
+      "name": "赤峰市",
+      "parentProvinceCode": "156150000"
+    },
+    {
+      "level": "city",
+      "code": "156150500",
+      "name": "通辽市",
+      "parentProvinceCode": "156150000"
+    },
+    {
+      "level": "city",
+      "code": "156150600",
+      "name": "鄂尔多斯市",
+      "parentProvinceCode": "156150000"
+    },
+    {
+      "level": "city",
+      "code": "156150700",
+      "name": "呼伦贝尔市",
+      "parentProvinceCode": "156150000"
+    },
+    {
+      "level": "city",
+      "code": "156150800",
+      "name": "巴彦淖尔市",
+      "parentProvinceCode": "156150000"
+    },
+    {
+      "level": "city",
+      "code": "156150900",
+      "name": "乌兰察布市",
+      "parentProvinceCode": "156150000"
+    },
+    {
+      "level": "city",
+      "code": "156152200",
+      "name": "兴安盟",
+      "parentProvinceCode": "156150000"
+    },
+    {
+      "level": "city",
+      "code": "156152500",
+      "name": "锡林郭勒盟",
+      "parentProvinceCode": "156150000"
+    },
+    {
+      "level": "city",
+      "code": "156152900",
+      "name": "阿拉善盟",
+      "parentProvinceCode": "156150000"
+    },
+    {
+      "level": "city",
+      "code": "156210100",
+      "name": "沈阳市",
+      "parentProvinceCode": "156210000"
+    },
+    {
+      "level": "city",
+      "code": "156210200",
+      "name": "大连市",
+      "parentProvinceCode": "156210000"
+    },
+    {
+      "level": "city",
+      "code": "156210300",
+      "name": "鞍山市",
+      "parentProvinceCode": "156210000"
+    },
+    {
+      "level": "city",
+      "code": "156210400",
+      "name": "抚顺市",
+      "parentProvinceCode": "156210000"
+    },
+    {
+      "level": "city",
+      "code": "156210500",
+      "name": "本溪市",
+      "parentProvinceCode": "156210000"
+    },
+    {
+      "level": "city",
+      "code": "156210600",
+      "name": "丹东市",
+      "parentProvinceCode": "156210000"
+    },
+    {
+      "level": "city",
+      "code": "156210700",
+      "name": "锦州市",
+      "parentProvinceCode": "156210000"
+    },
+    {
+      "level": "city",
+      "code": "156210800",
+      "name": "营口市",
+      "parentProvinceCode": "156210000"
+    },
+    {
+      "level": "city",
+      "code": "156210900",
+      "name": "阜新市",
+      "parentProvinceCode": "156210000"
+    },
+    {
+      "level": "city",
+      "code": "156211000",
+      "name": "辽阳市",
+      "parentProvinceCode": "156210000"
+    },
+    {
+      "level": "city",
+      "code": "156211100",
+      "name": "盘锦市",
+      "parentProvinceCode": "156210000"
+    },
+    {
+      "level": "city",
+      "code": "156211200",
+      "name": "铁岭市",
+      "parentProvinceCode": "156210000"
+    },
+    {
+      "level": "city",
+      "code": "156211300",
+      "name": "朝阳市",
+      "parentProvinceCode": "156210000"
+    },
+    {
+      "level": "city",
+      "code": "156211400",
+      "name": "葫芦岛市",
+      "parentProvinceCode": "156210000"
+    },
+    {
+      "level": "city",
+      "code": "156220100",
+      "name": "长春市",
+      "parentProvinceCode": "156220000"
+    },
+    {
+      "level": "city",
+      "code": "156220200",
+      "name": "吉林市",
+      "parentProvinceCode": "156220000"
+    },
+    {
+      "level": "city",
+      "code": "156220300",
+      "name": "四平市",
+      "parentProvinceCode": "156220000"
+    },
+    {
+      "level": "city",
+      "code": "156220400",
+      "name": "辽源市",
+      "parentProvinceCode": "156220000"
+    },
+    {
+      "level": "city",
+      "code": "156220500",
+      "name": "通化市",
+      "parentProvinceCode": "156220000"
+    },
+    {
+      "level": "city",
+      "code": "156220600",
+      "name": "白山市",
+      "parentProvinceCode": "156220000"
+    },
+    {
+      "level": "city",
+      "code": "156220700",
+      "name": "松原市",
+      "parentProvinceCode": "156220000"
+    },
+    {
+      "level": "city",
+      "code": "156220800",
+      "name": "白城市",
+      "parentProvinceCode": "156220000"
+    },
+    {
+      "level": "city",
+      "code": "156222400",
+      "name": "延边朝鲜族自治州",
+      "parentProvinceCode": "156220000"
+    },
+    {
+      "level": "city",
+      "code": "156230100",
+      "name": "哈尔滨市",
+      "parentProvinceCode": "156230000"
+    },
+    {
+      "level": "city",
+      "code": "156230200",
+      "name": "齐齐哈尔市",
+      "parentProvinceCode": "156230000"
+    },
+    {
+      "level": "city",
+      "code": "156230300",
+      "name": "鸡西市",
+      "parentProvinceCode": "156230000"
+    },
+    {
+      "level": "city",
+      "code": "156230400",
+      "name": "鹤岗市",
+      "parentProvinceCode": "156230000"
+    },
+    {
+      "level": "city",
+      "code": "156230500",
+      "name": "双鸭山市",
+      "parentProvinceCode": "156230000"
+    },
+    {
+      "level": "city",
+      "code": "156230600",
+      "name": "大庆市",
+      "parentProvinceCode": "156230000"
+    },
+    {
+      "level": "city",
+      "code": "156230700",
+      "name": "伊春市",
+      "parentProvinceCode": "156230000"
+    },
+    {
+      "level": "city",
+      "code": "156230800",
+      "name": "佳木斯市",
+      "parentProvinceCode": "156230000"
+    },
+    {
+      "level": "city",
+      "code": "156230900",
+      "name": "七台河市",
+      "parentProvinceCode": "156230000"
+    },
+    {
+      "level": "city",
+      "code": "156231000",
+      "name": "牡丹江市",
+      "parentProvinceCode": "156230000"
+    },
+    {
+      "level": "city",
+      "code": "156231100",
+      "name": "黑河市",
+      "parentProvinceCode": "156230000"
+    },
+    {
+      "level": "city",
+      "code": "156231200",
+      "name": "绥化市",
+      "parentProvinceCode": "156230000"
+    },
+    {
+      "level": "city",
+      "code": "156232700",
+      "name": "大兴安岭地区",
+      "parentProvinceCode": "156230000"
+    },
+    {
+      "level": "city",
+      "code": "156310000",
+      "name": "上海市",
+      "parentProvinceCode": "156310000"
+    },
+    {
+      "level": "city",
+      "code": "156320100",
+      "name": "南京市",
+      "parentProvinceCode": "156320000"
+    },
+    {
+      "level": "city",
+      "code": "156320200",
+      "name": "无锡市",
+      "parentProvinceCode": "156320000"
+    },
+    {
+      "level": "city",
+      "code": "156320300",
+      "name": "徐州市",
+      "parentProvinceCode": "156320000"
+    },
+    {
+      "level": "city",
+      "code": "156320400",
+      "name": "常州市",
+      "parentProvinceCode": "156320000"
+    },
+    {
+      "level": "city",
+      "code": "156320500",
+      "name": "苏州市",
+      "parentProvinceCode": "156320000"
+    },
+    {
+      "level": "city",
+      "code": "156320600",
+      "name": "南通市",
+      "parentProvinceCode": "156320000"
+    },
+    {
+      "level": "city",
+      "code": "156320700",
+      "name": "连云港市",
+      "parentProvinceCode": "156320000"
+    },
+    {
+      "level": "city",
+      "code": "156320800",
+      "name": "淮安市",
+      "parentProvinceCode": "156320000"
+    },
+    {
+      "level": "city",
+      "code": "156320900",
+      "name": "盐城市",
+      "parentProvinceCode": "156320000"
+    },
+    {
+      "level": "city",
+      "code": "156321000",
+      "name": "扬州市",
+      "parentProvinceCode": "156320000"
+    },
+    {
+      "level": "city",
+      "code": "156321100",
+      "name": "镇江市",
+      "parentProvinceCode": "156320000"
+    },
+    {
+      "level": "city",
+      "code": "156321200",
+      "name": "泰州市",
+      "parentProvinceCode": "156320000"
+    },
+    {
+      "level": "city",
+      "code": "156321300",
+      "name": "宿迁市",
+      "parentProvinceCode": "156320000"
+    },
+    {
+      "level": "city",
+      "code": "156330100",
+      "name": "杭州市",
+      "parentProvinceCode": "156330000"
+    },
+    {
+      "level": "city",
+      "code": "156330200",
+      "name": "宁波市",
+      "parentProvinceCode": "156330000"
+    },
+    {
+      "level": "city",
+      "code": "156330300",
+      "name": "温州市",
+      "parentProvinceCode": "156330000"
+    },
+    {
+      "level": "city",
+      "code": "156330400",
+      "name": "嘉兴市",
+      "parentProvinceCode": "156330000"
+    },
+    {
+      "level": "city",
+      "code": "156330500",
+      "name": "湖州市",
+      "parentProvinceCode": "156330000"
+    },
+    {
+      "level": "city",
+      "code": "156330600",
+      "name": "绍兴市",
+      "parentProvinceCode": "156330000"
+    },
+    {
+      "level": "city",
+      "code": "156330700",
+      "name": "金华市",
+      "parentProvinceCode": "156330000"
+    },
+    {
+      "level": "city",
+      "code": "156330800",
+      "name": "衢州市",
+      "parentProvinceCode": "156330000"
+    },
+    {
+      "level": "city",
+      "code": "156330900",
+      "name": "舟山市",
+      "parentProvinceCode": "156330000"
+    },
+    {
+      "level": "city",
+      "code": "156331000",
+      "name": "台州市",
+      "parentProvinceCode": "156330000"
+    },
+    {
+      "level": "city",
+      "code": "156331100",
+      "name": "丽水市",
+      "parentProvinceCode": "156330000"
+    },
+    {
+      "level": "city",
+      "code": "156340100",
+      "name": "合肥市",
+      "parentProvinceCode": "156340000"
+    },
+    {
+      "level": "city",
+      "code": "156340200",
+      "name": "芜湖市",
+      "parentProvinceCode": "156340000"
+    },
+    {
+      "level": "city",
+      "code": "156340300",
+      "name": "蚌埠市",
+      "parentProvinceCode": "156340000"
+    },
+    {
+      "level": "city",
+      "code": "156340400",
+      "name": "淮南市",
+      "parentProvinceCode": "156340000"
+    },
+    {
+      "level": "city",
+      "code": "156340500",
+      "name": "马鞍山市",
+      "parentProvinceCode": "156340000"
+    },
+    {
+      "level": "city",
+      "code": "156340600",
+      "name": "淮北市",
+      "parentProvinceCode": "156340000"
+    },
+    {
+      "level": "city",
+      "code": "156340700",
+      "name": "铜陵市",
+      "parentProvinceCode": "156340000"
+    },
+    {
+      "level": "city",
+      "code": "156340800",
+      "name": "安庆市",
+      "parentProvinceCode": "156340000"
+    },
+    {
+      "level": "city",
+      "code": "156341000",
+      "name": "黄山市",
+      "parentProvinceCode": "156340000"
+    },
+    {
+      "level": "city",
+      "code": "156341100",
+      "name": "滁州市",
+      "parentProvinceCode": "156340000"
+    },
+    {
+      "level": "city",
+      "code": "156341200",
+      "name": "阜阳市",
+      "parentProvinceCode": "156340000"
+    },
+    {
+      "level": "city",
+      "code": "156341300",
+      "name": "宿州市",
+      "parentProvinceCode": "156340000"
+    },
+    {
+      "level": "city",
+      "code": "156341500",
+      "name": "六安市",
+      "parentProvinceCode": "156340000"
+    },
+    {
+      "level": "city",
+      "code": "156341600",
+      "name": "亳州市",
+      "parentProvinceCode": "156340000"
+    },
+    {
+      "level": "city",
+      "code": "156341700",
+      "name": "池州市",
+      "parentProvinceCode": "156340000"
+    },
+    {
+      "level": "city",
+      "code": "156341800",
+      "name": "宣城市",
+      "parentProvinceCode": "156340000"
+    },
+    {
+      "level": "city",
+      "code": "156350100",
+      "name": "福州市",
+      "parentProvinceCode": "156350000"
+    },
+    {
+      "level": "city",
+      "code": "156350200",
+      "name": "厦门市",
+      "parentProvinceCode": "156350000"
+    },
+    {
+      "level": "city",
+      "code": "156350300",
+      "name": "莆田市",
+      "parentProvinceCode": "156350000"
+    },
+    {
+      "level": "city",
+      "code": "156350400",
+      "name": "三明市",
+      "parentProvinceCode": "156350000"
+    },
+    {
+      "level": "city",
+      "code": "156350500",
+      "name": "泉州市",
+      "parentProvinceCode": "156350000"
+    },
+    {
+      "level": "city",
+      "code": "156350600",
+      "name": "漳州市",
+      "parentProvinceCode": "156350000"
+    },
+    {
+      "level": "city",
+      "code": "156350700",
+      "name": "南平市",
+      "parentProvinceCode": "156350000"
+    },
+    {
+      "level": "city",
+      "code": "156350800",
+      "name": "龙岩市",
+      "parentProvinceCode": "156350000"
+    },
+    {
+      "level": "city",
+      "code": "156350900",
+      "name": "宁德市",
+      "parentProvinceCode": "156350000"
+    },
+    {
+      "level": "city",
+      "code": "156360100",
+      "name": "南昌市",
+      "parentProvinceCode": "156360000"
+    },
+    {
+      "level": "city",
+      "code": "156360200",
+      "name": "景德镇市",
+      "parentProvinceCode": "156360000"
+    },
+    {
+      "level": "city",
+      "code": "156360300",
+      "name": "萍乡市",
+      "parentProvinceCode": "156360000"
+    },
+    {
+      "level": "city",
+      "code": "156360400",
+      "name": "九江市",
+      "parentProvinceCode": "156360000"
+    },
+    {
+      "level": "city",
+      "code": "156360500",
+      "name": "新余市",
+      "parentProvinceCode": "156360000"
+    },
+    {
+      "level": "city",
+      "code": "156360600",
+      "name": "鹰潭市",
+      "parentProvinceCode": "156360000"
+    },
+    {
+      "level": "city",
+      "code": "156360700",
+      "name": "赣州市",
+      "parentProvinceCode": "156360000"
+    },
+    {
+      "level": "city",
+      "code": "156360800",
+      "name": "吉安市",
+      "parentProvinceCode": "156360000"
+    },
+    {
+      "level": "city",
+      "code": "156360900",
+      "name": "宜春市",
+      "parentProvinceCode": "156360000"
+    },
+    {
+      "level": "city",
+      "code": "156361000",
+      "name": "抚州市",
+      "parentProvinceCode": "156360000"
+    },
+    {
+      "level": "city",
+      "code": "156361100",
+      "name": "上饶市",
+      "parentProvinceCode": "156360000"
+    },
+    {
+      "level": "city",
+      "code": "156370100",
+      "name": "济南市",
+      "parentProvinceCode": "156370000"
+    },
+    {
+      "level": "city",
+      "code": "156370200",
+      "name": "青岛市",
+      "parentProvinceCode": "156370000"
+    },
+    {
+      "level": "city",
+      "code": "156370300",
+      "name": "淄博市",
+      "parentProvinceCode": "156370000"
+    },
+    {
+      "level": "city",
+      "code": "156370400",
+      "name": "枣庄市",
+      "parentProvinceCode": "156370000"
+    },
+    {
+      "level": "city",
+      "code": "156370500",
+      "name": "东营市",
+      "parentProvinceCode": "156370000"
+    },
+    {
+      "level": "city",
+      "code": "156370600",
+      "name": "烟台市",
+      "parentProvinceCode": "156370000"
+    },
+    {
+      "level": "city",
+      "code": "156370700",
+      "name": "潍坊市",
+      "parentProvinceCode": "156370000"
+    },
+    {
+      "level": "city",
+      "code": "156370800",
+      "name": "济宁市",
+      "parentProvinceCode": "156370000"
+    },
+    {
+      "level": "city",
+      "code": "156370900",
+      "name": "泰安市",
+      "parentProvinceCode": "156370000"
+    },
+    {
+      "level": "city",
+      "code": "156371000",
+      "name": "威海市",
+      "parentProvinceCode": "156370000"
+    },
+    {
+      "level": "city",
+      "code": "156371100",
+      "name": "日照市",
+      "parentProvinceCode": "156370000"
+    },
+    {
+      "level": "city",
+      "code": "156371300",
+      "name": "临沂市",
+      "parentProvinceCode": "156370000"
+    },
+    {
+      "level": "city",
+      "code": "156371400",
+      "name": "德州市",
+      "parentProvinceCode": "156370000"
+    },
+    {
+      "level": "city",
+      "code": "156371500",
+      "name": "聊城市",
+      "parentProvinceCode": "156370000"
+    },
+    {
+      "level": "city",
+      "code": "156371600",
+      "name": "滨州市",
+      "parentProvinceCode": "156370000"
+    },
+    {
+      "level": "city",
+      "code": "156371700",
+      "name": "菏泽市",
+      "parentProvinceCode": "156370000"
+    },
+    {
+      "level": "city",
+      "code": "156410100",
+      "name": "郑州市",
+      "parentProvinceCode": "156410000"
+    },
+    {
+      "level": "city",
+      "code": "156410200",
+      "name": "开封市",
+      "parentProvinceCode": "156410000"
+    },
+    {
+      "level": "city",
+      "code": "156410300",
+      "name": "洛阳市",
+      "parentProvinceCode": "156410000"
+    },
+    {
+      "level": "city",
+      "code": "156410400",
+      "name": "平顶山市",
+      "parentProvinceCode": "156410000"
+    },
+    {
+      "level": "city",
+      "code": "156410500",
+      "name": "安阳市",
+      "parentProvinceCode": "156410000"
+    },
+    {
+      "level": "city",
+      "code": "156410600",
+      "name": "鹤壁市",
+      "parentProvinceCode": "156410000"
+    },
+    {
+      "level": "city",
+      "code": "156410700",
+      "name": "新乡市",
+      "parentProvinceCode": "156410000"
+    },
+    {
+      "level": "city",
+      "code": "156410800",
+      "name": "焦作市",
+      "parentProvinceCode": "156410000"
+    },
+    {
+      "level": "city",
+      "code": "156410900",
+      "name": "濮阳市",
+      "parentProvinceCode": "156410000"
+    },
+    {
+      "level": "city",
+      "code": "156411000",
+      "name": "许昌市",
+      "parentProvinceCode": "156410000"
+    },
+    {
+      "level": "city",
+      "code": "156411100",
+      "name": "漯河市",
+      "parentProvinceCode": "156410000"
+    },
+    {
+      "level": "city",
+      "code": "156411200",
+      "name": "三门峡市",
+      "parentProvinceCode": "156410000"
+    },
+    {
+      "level": "city",
+      "code": "156411300",
+      "name": "南阳市",
+      "parentProvinceCode": "156410000"
+    },
+    {
+      "level": "city",
+      "code": "156411400",
+      "name": "商丘市",
+      "parentProvinceCode": "156410000"
+    },
+    {
+      "level": "city",
+      "code": "156411500",
+      "name": "信阳市",
+      "parentProvinceCode": "156410000"
+    },
+    {
+      "level": "city",
+      "code": "156411600",
+      "name": "周口市",
+      "parentProvinceCode": "156410000"
+    },
+    {
+      "level": "city",
+      "code": "156411700",
+      "name": "驻马店市",
+      "parentProvinceCode": "156410000"
+    },
+    {
+      "level": "city",
+      "code": "156419001",
+      "name": "济源市",
+      "parentProvinceCode": "156410000"
+    },
+    {
+      "level": "city",
+      "code": "156420100",
+      "name": "武汉市",
+      "parentProvinceCode": "156420000"
+    },
+    {
+      "level": "city",
+      "code": "156420200",
+      "name": "黄石市",
+      "parentProvinceCode": "156420000"
+    },
+    {
+      "level": "city",
+      "code": "156420300",
+      "name": "十堰市",
+      "parentProvinceCode": "156420000"
+    },
+    {
+      "level": "city",
+      "code": "156420500",
+      "name": "宜昌市",
+      "parentProvinceCode": "156420000"
+    },
+    {
+      "level": "city",
+      "code": "156420600",
+      "name": "襄阳市",
+      "parentProvinceCode": "156420000"
+    },
+    {
+      "level": "city",
+      "code": "156420700",
+      "name": "鄂州市",
+      "parentProvinceCode": "156420000"
+    },
+    {
+      "level": "city",
+      "code": "156420800",
+      "name": "荆门市",
+      "parentProvinceCode": "156420000"
+    },
+    {
+      "level": "city",
+      "code": "156420900",
+      "name": "孝感市",
+      "parentProvinceCode": "156420000"
+    },
+    {
+      "level": "city",
+      "code": "156421000",
+      "name": "荆州市",
+      "parentProvinceCode": "156420000"
+    },
+    {
+      "level": "city",
+      "code": "156421100",
+      "name": "黄冈市",
+      "parentProvinceCode": "156420000"
+    },
+    {
+      "level": "city",
+      "code": "156421200",
+      "name": "咸宁市",
+      "parentProvinceCode": "156420000"
+    },
+    {
+      "level": "city",
+      "code": "156421300",
+      "name": "随州市",
+      "parentProvinceCode": "156420000"
+    },
+    {
+      "level": "city",
+      "code": "156422800",
+      "name": "恩施土家族苗族自治州",
+      "parentProvinceCode": "156420000"
+    },
+    {
+      "level": "city",
+      "code": "156429004",
+      "name": "仙桃市",
+      "parentProvinceCode": "156420000"
+    },
+    {
+      "level": "city",
+      "code": "156429005",
+      "name": "潜江市",
+      "parentProvinceCode": "156420000"
+    },
+    {
+      "level": "city",
+      "code": "156429006",
+      "name": "天门市",
+      "parentProvinceCode": "156420000"
+    },
+    {
+      "level": "city",
+      "code": "156429021",
+      "name": "神农架林区",
+      "parentProvinceCode": "156420000"
+    },
+    {
+      "level": "city",
+      "code": "156430100",
+      "name": "长沙市",
+      "parentProvinceCode": "156430000"
+    },
+    {
+      "level": "city",
+      "code": "156430200",
+      "name": "株洲市",
+      "parentProvinceCode": "156430000"
+    },
+    {
+      "level": "city",
+      "code": "156430300",
+      "name": "湘潭市",
+      "parentProvinceCode": "156430000"
+    },
+    {
+      "level": "city",
+      "code": "156430400",
+      "name": "衡阳市",
+      "parentProvinceCode": "156430000"
+    },
+    {
+      "level": "city",
+      "code": "156430500",
+      "name": "邵阳市",
+      "parentProvinceCode": "156430000"
+    },
+    {
+      "level": "city",
+      "code": "156430600",
+      "name": "岳阳市",
+      "parentProvinceCode": "156430000"
+    },
+    {
+      "level": "city",
+      "code": "156430700",
+      "name": "常德市",
+      "parentProvinceCode": "156430000"
+    },
+    {
+      "level": "city",
+      "code": "156430800",
+      "name": "张家界市",
+      "parentProvinceCode": "156430000"
+    },
+    {
+      "level": "city",
+      "code": "156430900",
+      "name": "益阳市",
+      "parentProvinceCode": "156430000"
+    },
+    {
+      "level": "city",
+      "code": "156431000",
+      "name": "郴州市",
+      "parentProvinceCode": "156430000"
+    },
+    {
+      "level": "city",
+      "code": "156431100",
+      "name": "永州市",
+      "parentProvinceCode": "156430000"
+    },
+    {
+      "level": "city",
+      "code": "156431200",
+      "name": "怀化市",
+      "parentProvinceCode": "156430000"
+    },
+    {
+      "level": "city",
+      "code": "156431300",
+      "name": "娄底市",
+      "parentProvinceCode": "156430000"
+    },
+    {
+      "level": "city",
+      "code": "156433100",
+      "name": "湘西土家族苗族自治州",
+      "parentProvinceCode": "156430000"
+    },
+    {
+      "level": "city",
+      "code": "156440100",
+      "name": "广州市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156440200",
+      "name": "韶关市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156440300",
+      "name": "深圳市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156440400",
+      "name": "珠海市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156440500",
+      "name": "汕头市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156440600",
+      "name": "佛山市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156440700",
+      "name": "江门市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156440800",
+      "name": "湛江市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156440900",
+      "name": "茂名市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156441200",
+      "name": "肇庆市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156441300",
+      "name": "惠州市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156441400",
+      "name": "梅州市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156441500",
+      "name": "汕尾市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156441600",
+      "name": "河源市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156441700",
+      "name": "阳江市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156441800",
+      "name": "清远市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156441900",
+      "name": "东莞市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156442000",
+      "name": "中山市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156445100",
+      "name": "潮州市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156445200",
+      "name": "揭阳市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156445300",
+      "name": "云浮市",
+      "parentProvinceCode": "156440000"
+    },
+    {
+      "level": "city",
+      "code": "156450100",
+      "name": "南宁市",
+      "parentProvinceCode": "156450000"
+    },
+    {
+      "level": "city",
+      "code": "156450200",
+      "name": "柳州市",
+      "parentProvinceCode": "156450000"
+    },
+    {
+      "level": "city",
+      "code": "156450300",
+      "name": "桂林市",
+      "parentProvinceCode": "156450000"
+    },
+    {
+      "level": "city",
+      "code": "156450400",
+      "name": "梧州市",
+      "parentProvinceCode": "156450000"
+    },
+    {
+      "level": "city",
+      "code": "156450500",
+      "name": "北海市",
+      "parentProvinceCode": "156450000"
+    },
+    {
+      "level": "city",
+      "code": "156450600",
+      "name": "防城港市",
+      "parentProvinceCode": "156450000"
+    },
+    {
+      "level": "city",
+      "code": "156450700",
+      "name": "钦州市",
+      "parentProvinceCode": "156450000"
+    },
+    {
+      "level": "city",
+      "code": "156450800",
+      "name": "贵港市",
+      "parentProvinceCode": "156450000"
+    },
+    {
+      "level": "city",
+      "code": "156450900",
+      "name": "玉林市",
+      "parentProvinceCode": "156450000"
+    },
+    {
+      "level": "city",
+      "code": "156451000",
+      "name": "百色市",
+      "parentProvinceCode": "156450000"
+    },
+    {
+      "level": "city",
+      "code": "156451100",
+      "name": "贺州市",
+      "parentProvinceCode": "156450000"
+    },
+    {
+      "level": "city",
+      "code": "156451200",
+      "name": "河池市",
+      "parentProvinceCode": "156450000"
+    },
+    {
+      "level": "city",
+      "code": "156451300",
+      "name": "来宾市",
+      "parentProvinceCode": "156450000"
+    },
+    {
+      "level": "city",
+      "code": "156451400",
+      "name": "崇左市",
+      "parentProvinceCode": "156450000"
+    },
+    {
+      "level": "city",
+      "code": "156460100",
+      "name": "海口市",
+      "parentProvinceCode": "156460000"
+    },
+    {
+      "level": "city",
+      "code": "156460200",
+      "name": "三亚市",
+      "parentProvinceCode": "156460000"
+    },
+    {
+      "level": "city",
+      "code": "156460300",
+      "name": "三沙市",
+      "parentProvinceCode": "156460000"
+    },
+    {
+      "level": "city",
+      "code": "156460400",
+      "name": "儋州市",
+      "parentProvinceCode": "156460000"
+    },
+    {
+      "level": "city",
+      "code": "156469001",
+      "name": "五指山市",
+      "parentProvinceCode": "156460000"
+    },
+    {
+      "level": "city",
+      "code": "156469002",
+      "name": "琼海市",
+      "parentProvinceCode": "156460000"
+    },
+    {
+      "level": "city",
+      "code": "156469005",
+      "name": "文昌市",
+      "parentProvinceCode": "156460000"
+    },
+    {
+      "level": "city",
+      "code": "156469006",
+      "name": "万宁市",
+      "parentProvinceCode": "156460000"
+    },
+    {
+      "level": "city",
+      "code": "156469007",
+      "name": "东方市",
+      "parentProvinceCode": "156460000"
+    },
+    {
+      "level": "city",
+      "code": "156469021",
+      "name": "定安县",
+      "parentProvinceCode": "156460000"
+    },
+    {
+      "level": "city",
+      "code": "156469022",
+      "name": "屯昌县",
+      "parentProvinceCode": "156460000"
+    },
+    {
+      "level": "city",
+      "code": "156469023",
+      "name": "澄迈县",
+      "parentProvinceCode": "156460000"
+    },
+    {
+      "level": "city",
+      "code": "156469024",
+      "name": "临高县",
+      "parentProvinceCode": "156460000"
+    },
+    {
+      "level": "city",
+      "code": "156469025",
+      "name": "白沙黎族自治县",
+      "parentProvinceCode": "156460000"
+    },
+    {
+      "level": "city",
+      "code": "156469026",
+      "name": "昌江黎族自治县",
+      "parentProvinceCode": "156460000"
+    },
+    {
+      "level": "city",
+      "code": "156469027",
+      "name": "乐东黎族自治县",
+      "parentProvinceCode": "156460000"
+    },
+    {
+      "level": "city",
+      "code": "156469028",
+      "name": "陵水黎族自治县",
+      "parentProvinceCode": "156460000"
+    },
+    {
+      "level": "city",
+      "code": "156469029",
+      "name": "保亭黎族苗族自治县",
+      "parentProvinceCode": "156460000"
+    },
+    {
+      "level": "city",
+      "code": "156469030",
+      "name": "琼中黎族苗族自治县",
+      "parentProvinceCode": "156460000"
+    },
+    {
+      "level": "city",
+      "code": "156500000",
+      "name": "重庆市",
+      "parentProvinceCode": "156500000"
+    },
+    {
+      "level": "city",
+      "code": "156510100",
+      "name": "成都市",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156510300",
+      "name": "自贡市",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156510400",
+      "name": "攀枝花市",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156510500",
+      "name": "泸州市",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156510600",
+      "name": "德阳市",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156510700",
+      "name": "绵阳市",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156510800",
+      "name": "广元市",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156510900",
+      "name": "遂宁市",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156511000",
+      "name": "内江市",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156511100",
+      "name": "乐山市",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156511300",
+      "name": "南充市",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156511400",
+      "name": "眉山市",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156511500",
+      "name": "宜宾市",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156511600",
+      "name": "广安市",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156511700",
+      "name": "达州市",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156511800",
+      "name": "雅安市",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156511900",
+      "name": "巴中市",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156512000",
+      "name": "资阳市",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156513200",
+      "name": "阿坝藏族羌族自治州",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156513300",
+      "name": "甘孜藏族自治州",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156513400",
+      "name": "凉山彝族自治州",
+      "parentProvinceCode": "156510000"
+    },
+    {
+      "level": "city",
+      "code": "156520100",
+      "name": "贵阳市",
+      "parentProvinceCode": "156520000"
+    },
+    {
+      "level": "city",
+      "code": "156520200",
+      "name": "六盘水市",
+      "parentProvinceCode": "156520000"
+    },
+    {
+      "level": "city",
+      "code": "156520300",
+      "name": "遵义市",
+      "parentProvinceCode": "156520000"
+    },
+    {
+      "level": "city",
+      "code": "156520400",
+      "name": "安顺市",
+      "parentProvinceCode": "156520000"
+    },
+    {
+      "level": "city",
+      "code": "156520500",
+      "name": "毕节市",
+      "parentProvinceCode": "156520000"
+    },
+    {
+      "level": "city",
+      "code": "156520600",
+      "name": "铜仁市",
+      "parentProvinceCode": "156520000"
+    },
+    {
+      "level": "city",
+      "code": "156522300",
+      "name": "黔西南布依族苗族自治州",
+      "parentProvinceCode": "156520000"
+    },
+    {
+      "level": "city",
+      "code": "156522600",
+      "name": "黔东南苗族侗族自治州",
+      "parentProvinceCode": "156520000"
+    },
+    {
+      "level": "city",
+      "code": "156522700",
+      "name": "黔南布依族苗族自治州",
+      "parentProvinceCode": "156520000"
+    },
+    {
+      "level": "city",
+      "code": "156530100",
+      "name": "昆明市",
+      "parentProvinceCode": "156530000"
+    },
+    {
+      "level": "city",
+      "code": "156530300",
+      "name": "曲靖市",
+      "parentProvinceCode": "156530000"
+    },
+    {
+      "level": "city",
+      "code": "156530400",
+      "name": "玉溪市",
+      "parentProvinceCode": "156530000"
+    },
+    {
+      "level": "city",
+      "code": "156530500",
+      "name": "保山市",
+      "parentProvinceCode": "156530000"
+    },
+    {
+      "level": "city",
+      "code": "156530600",
+      "name": "昭通市",
+      "parentProvinceCode": "156530000"
+    },
+    {
+      "level": "city",
+      "code": "156530700",
+      "name": "丽江市",
+      "parentProvinceCode": "156530000"
+    },
+    {
+      "level": "city",
+      "code": "156530800",
+      "name": "普洱市",
+      "parentProvinceCode": "156530000"
+    },
+    {
+      "level": "city",
+      "code": "156530900",
+      "name": "临沧市",
+      "parentProvinceCode": "156530000"
+    },
+    {
+      "level": "city",
+      "code": "156532300",
+      "name": "楚雄彝族自治州",
+      "parentProvinceCode": "156530000"
+    },
+    {
+      "level": "city",
+      "code": "156532500",
+      "name": "红河哈尼族彝族自治州",
+      "parentProvinceCode": "156530000"
+    },
+    {
+      "level": "city",
+      "code": "156532600",
+      "name": "文山壮族苗族自治州",
+      "parentProvinceCode": "156530000"
+    },
+    {
+      "level": "city",
+      "code": "156532800",
+      "name": "西双版纳傣族自治州",
+      "parentProvinceCode": "156530000"
+    },
+    {
+      "level": "city",
+      "code": "156532900",
+      "name": "大理白族自治州",
+      "parentProvinceCode": "156530000"
+    },
+    {
+      "level": "city",
+      "code": "156533100",
+      "name": "德宏傣族景颇族自治州",
+      "parentProvinceCode": "156530000"
+    },
+    {
+      "level": "city",
+      "code": "156533300",
+      "name": "怒江傈僳族自治州",
+      "parentProvinceCode": "156530000"
+    },
+    {
+      "level": "city",
+      "code": "156533400",
+      "name": "迪庆藏族自治州",
+      "parentProvinceCode": "156530000"
+    },
+    {
+      "level": "city",
+      "code": "156540100",
+      "name": "拉萨市",
+      "parentProvinceCode": "156540000"
+    },
+    {
+      "level": "city",
+      "code": "156540200",
+      "name": "日喀则市",
+      "parentProvinceCode": "156540000"
+    },
+    {
+      "level": "city",
+      "code": "156540300",
+      "name": "昌都市",
+      "parentProvinceCode": "156540000"
+    },
+    {
+      "level": "city",
+      "code": "156540400",
+      "name": "林芝市",
+      "parentProvinceCode": "156540000"
+    },
+    {
+      "level": "city",
+      "code": "156540500",
+      "name": "山南市",
+      "parentProvinceCode": "156540000"
+    },
+    {
+      "level": "city",
+      "code": "156540600",
+      "name": "那曲市",
+      "parentProvinceCode": "156540000"
+    },
+    {
+      "level": "city",
+      "code": "156542500",
+      "name": "阿里地区",
+      "parentProvinceCode": "156540000"
+    },
+    {
+      "level": "city",
+      "code": "156610100",
+      "name": "西安市",
+      "parentProvinceCode": "156610000"
+    },
+    {
+      "level": "city",
+      "code": "156610200",
+      "name": "铜川市",
+      "parentProvinceCode": "156610000"
+    },
+    {
+      "level": "city",
+      "code": "156610300",
+      "name": "宝鸡市",
+      "parentProvinceCode": "156610000"
+    },
+    {
+      "level": "city",
+      "code": "156610400",
+      "name": "咸阳市",
+      "parentProvinceCode": "156610000"
+    },
+    {
+      "level": "city",
+      "code": "156610500",
+      "name": "渭南市",
+      "parentProvinceCode": "156610000"
+    },
+    {
+      "level": "city",
+      "code": "156610600",
+      "name": "延安市",
+      "parentProvinceCode": "156610000"
+    },
+    {
+      "level": "city",
+      "code": "156610700",
+      "name": "汉中市",
+      "parentProvinceCode": "156610000"
+    },
+    {
+      "level": "city",
+      "code": "156610800",
+      "name": "榆林市",
+      "parentProvinceCode": "156610000"
+    },
+    {
+      "level": "city",
+      "code": "156610900",
+      "name": "安康市",
+      "parentProvinceCode": "156610000"
+    },
+    {
+      "level": "city",
+      "code": "156611000",
+      "name": "商洛市",
+      "parentProvinceCode": "156610000"
+    },
+    {
+      "level": "city",
+      "code": "156620100",
+      "name": "兰州市",
+      "parentProvinceCode": "156620000"
+    },
+    {
+      "level": "city",
+      "code": "156620200",
+      "name": "嘉峪关市",
+      "parentProvinceCode": "156620000"
+    },
+    {
+      "level": "city",
+      "code": "156620300",
+      "name": "金昌市",
+      "parentProvinceCode": "156620000"
+    },
+    {
+      "level": "city",
+      "code": "156620400",
+      "name": "白银市",
+      "parentProvinceCode": "156620000"
+    },
+    {
+      "level": "city",
+      "code": "156620500",
+      "name": "天水市",
+      "parentProvinceCode": "156620000"
+    },
+    {
+      "level": "city",
+      "code": "156620600",
+      "name": "武威市",
+      "parentProvinceCode": "156620000"
+    },
+    {
+      "level": "city",
+      "code": "156620700",
+      "name": "张掖市",
+      "parentProvinceCode": "156620000"
+    },
+    {
+      "level": "city",
+      "code": "156620800",
+      "name": "平凉市",
+      "parentProvinceCode": "156620000"
+    },
+    {
+      "level": "city",
+      "code": "156620900",
+      "name": "酒泉市",
+      "parentProvinceCode": "156620000"
+    },
+    {
+      "level": "city",
+      "code": "156621000",
+      "name": "庆阳市",
+      "parentProvinceCode": "156620000"
+    },
+    {
+      "level": "city",
+      "code": "156621100",
+      "name": "定西市",
+      "parentProvinceCode": "156620000"
+    },
+    {
+      "level": "city",
+      "code": "156621200",
+      "name": "陇南市",
+      "parentProvinceCode": "156620000"
+    },
+    {
+      "level": "city",
+      "code": "156622900",
+      "name": "临夏回族自治州",
+      "parentProvinceCode": "156620000"
+    },
+    {
+      "level": "city",
+      "code": "156623000",
+      "name": "甘南藏族自治州",
+      "parentProvinceCode": "156620000"
+    },
+    {
+      "level": "city",
+      "code": "156629700",
+      "name": "中农发山丹马场",
+      "parentProvinceCode": "156620000"
+    },
+    {
+      "level": "city",
+      "code": "156629800",
+      "name": "莲花山风景林自然保护区",
+      "parentProvinceCode": "156620000"
+    },
+    {
+      "level": "city",
+      "code": "156629900",
+      "name": "太子山天然林保护区",
+      "parentProvinceCode": "156620000"
+    },
+    {
+      "level": "city",
+      "code": "156630100",
+      "name": "西宁市",
+      "parentProvinceCode": "156630000"
+    },
+    {
+      "level": "city",
+      "code": "156630200",
+      "name": "海东市",
+      "parentProvinceCode": "156630000"
+    },
+    {
+      "level": "city",
+      "code": "156632200",
+      "name": "海北藏族自治州",
+      "parentProvinceCode": "156630000"
+    },
+    {
+      "level": "city",
+      "code": "156632300",
+      "name": "黄南藏族自治州",
+      "parentProvinceCode": "156630000"
+    },
+    {
+      "level": "city",
+      "code": "156632500",
+      "name": "海南藏族自治州",
+      "parentProvinceCode": "156630000"
+    },
+    {
+      "level": "city",
+      "code": "156632600",
+      "name": "果洛藏族自治州",
+      "parentProvinceCode": "156630000"
+    },
+    {
+      "level": "city",
+      "code": "156632700",
+      "name": "玉树藏族自治州",
+      "parentProvinceCode": "156630000"
+    },
+    {
+      "level": "city",
+      "code": "156632800",
+      "name": "海西蒙古族藏族自治州",
+      "parentProvinceCode": "156630000"
+    },
+    {
+      "level": "city",
+      "code": "156640100",
+      "name": "银川市",
+      "parentProvinceCode": "156640000"
+    },
+    {
+      "level": "city",
+      "code": "156640200",
+      "name": "石嘴山市",
+      "parentProvinceCode": "156640000"
+    },
+    {
+      "level": "city",
+      "code": "156640300",
+      "name": "吴忠市",
+      "parentProvinceCode": "156640000"
+    },
+    {
+      "level": "city",
+      "code": "156640400",
+      "name": "固原市",
+      "parentProvinceCode": "156640000"
+    },
+    {
+      "level": "city",
+      "code": "156640500",
+      "name": "中卫市",
+      "parentProvinceCode": "156640000"
+    },
+    {
+      "level": "city",
+      "code": "156650100",
+      "name": "乌鲁木齐市",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156650200",
+      "name": "克拉玛依市",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156650400",
+      "name": "吐鲁番市",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156650500",
+      "name": "哈密市",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156652300",
+      "name": "昌吉回族自治州",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156652700",
+      "name": "博尔塔拉蒙古自治州",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156652800",
+      "name": "巴音郭楞蒙古自治州",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156652900",
+      "name": "阿克苏地区",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156653000",
+      "name": "克孜勒苏柯尔克孜自治州",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156653100",
+      "name": "喀什地区",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156653200",
+      "name": "和田地区",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156654000",
+      "name": "伊犁哈萨克自治州",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156654200",
+      "name": "塔城地区",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156654300",
+      "name": "阿勒泰地区",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156659001",
+      "name": "石河子市",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156659002",
+      "name": "阿拉尔市",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156659003",
+      "name": "图木舒克市",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156659004",
+      "name": "五家渠市",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156659005",
+      "name": "北屯市",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156659006",
+      "name": "铁门关市",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156659007",
+      "name": "双河市",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156659008",
+      "name": "可克达拉市",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156659009",
+      "name": "昆玉市",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156659010",
+      "name": "胡杨河市",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156659011",
+      "name": "新星市",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156659012",
+      "name": "白杨市",
+      "parentProvinceCode": "156650000"
+    },
+    {
+      "level": "city",
+      "code": "156710000",
+      "name": "台湾省",
+      "parentProvinceCode": "156710000"
+    },
+    {
+      "level": "city",
+      "code": "156810000",
+      "name": "香港特别行政区",
+      "parentProvinceCode": "156810000"
+    },
+    {
+      "level": "city",
+      "code": "156820000",
+      "name": "澳门特别行政区",
+      "parentProvinceCode": "156820000"
+    }
+  ]
+}

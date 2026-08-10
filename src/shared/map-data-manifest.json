@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "sourceUrl": "https://cloudcenter.tianditu.gov.cn/administrativeDivision",
+  "files": [
+    {
+      "kind": "province",
+      "label": "省份数据",
+      "canonicalFileName": "china-provinces.geojson",
+      "byteLength": 1698398,
+      "sha256": "3af8294f9ad61cc2bf84c1bb7e4bbf86a6336c68d754b699a0e6ddc33ef81486",
+      "regionCount": 34
+    },
+    {
+      "kind": "city",
+      "label": "城市数据",
+      "canonicalFileName": "china-city-view.geojson",
+      "byteLength": 4265699,
+      "sha256": "d7a6f05b7e58cf758d74bd71ed0ea2ce981ef99436e4881e9a68098c3cd80b3b",
+      "regionCount": 375
+    }
+  ]
+}

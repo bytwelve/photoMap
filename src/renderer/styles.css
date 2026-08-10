@@ -1,0 +1,14 @@
+
+:root { color: #273b35; background: #f4f2ea; font-family: "Microsoft YaHei", sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; border: 1px solid #c6d1c8; background: #fffdf6; color: #273b35; border-radius: 7px; padding: 8px 14px; }
+button:disabled { opacity: .45; cursor: default; }
+button.active { background: #285341; color: white; }
+input, select, textarea { min-width: 0; border: 1px solid #c6d1c8; border-radius: 6px; padding: 8px; background: #fffdf9; }
+.app-header { display: flex; align-items: center; gap: 16px; padding: 12px 24px; border-bottom: 1px solid #d9ded5; -webkit-app-region: drag; }
+.app-header h1 { font-size: 18px; margin: 0 auto 0 0; }
+.app-header button, .app-header nav { -webkit-app-region: no-drag; }
+.app-header nav { display: flex; gap: 6px; }
+.empty-library { text-align: center; padding: 100px 24px; }

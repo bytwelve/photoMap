@@ -1,0 +1,60 @@
+{
+  "name": "photo-map",
+  "productName": "用照片拼地图",
+  "version": "0.0.0",
+  "description": "完全离线的 Windows 照片地图桌面应用",
+  "author": "PhotoMap contributors",
+  "main": ".webpack/main",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": "24.19.0"
+  },
+  "packageManager": "npm@11.12.1",
+  "scripts": {
+    "start": "electron-forge start",
+    "package:forge": "electron-forge package --arch=x64",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@phosphor-icons/react": "2.1.10",
+    "electron-squirrel-startup": "1.0.1",
+    "react": "19.2.7",
+    "react-dom": "19.2.7"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "7.11.2",
+    "@electron-forge/plugin-fuses": "7.11.2",
+    "@electron-forge/plugin-webpack": "7.11.2",
+    "@electron-forge/shared-types": "7.11.2",
+    "@electron/asar": "3.4.1",
+    "@electron/fuses": "1.8.0",
+    "@eslint/js": "10.0.1",
+    "@types/electron-squirrel-startup": "1.0.2",
+    "@types/node": "24.10.1",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "@vercel/webpack-asset-relocator-loader": "1.7.3",
+    "css-loader": "7.1.2",
+    "electron": "43.4.1",
+    "electron-winstaller": "5.4.4",
+    "eslint": "10.10.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.12.0",
+    "knip": "6.35.1",
+    "node-loader": "2.1.0",
+    "style-loader": "4.0.0",
+    "ts-loader": "9.5.2",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.70.0",
+    "vitest": "4.1.11",
+    "webpack": "5.110.3"
+  },
+  "overrides": {
+    "qs": "6.16.0",
+    "extract-zip": "npm:@electron-internal/extract-zip@1.0.5",
+    "tar": "7.5.22",
+    "tmp": "0.2.7",
+    "webpack-dev-server": "6.0.0"
+  }
+}

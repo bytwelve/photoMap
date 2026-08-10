@@ -1,0 +1,11 @@
+* text=auto eol=lf
+
+*.png -text
+*.jpg -text
+*.jpeg -text
+*.webp -text
+*.ico -text
+*.zip -text
+*.exe -text
+*.nupkg -text
+*.sqlite3 -text

@@ -1,0 +1,46 @@
+# 构建与测试产物
+node_modules/
+.webpack/
+out/
+dist/
+coverage/
+test-results/
+output/
+*.log
+.npm-cache/
+.tools/
+.local/
+.playwright-cli/
+.agents/
+.codex/
+*.tsbuildinfo
+*.bak
+*.backup
+*.orig
+*.rej
+*.tmp
+*.temp
+*~
+
+# 操作系统与个人编辑器状态
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+# 本地数据与发布归档
+PhotoMapData/
+releases/
+
+# 密钥与证书
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
