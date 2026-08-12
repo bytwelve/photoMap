@@ -11,4 +11,15 @@ input, select, textarea { min-width: 0; border: 1px solid #c6d1c8; border-radius
 .app-header h1 { font-size: 18px; margin: 0 auto 0 0; }
 .app-header button, .app-header nav { -webkit-app-region: no-drag; }
 .app-header nav { display: flex; gap: 6px; }
+.source-toolbar { display: flex; gap: 12px; align-items: center; padding: 14px 24px; }
+.library-layout { display: flex; min-height: calc(100vh - 175px); }
+.library-content { flex: 1; min-width: 0; padding: 20px; }
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
+.photo-tile { overflow: hidden; background: #fffdf9; padding: 8px; border: 2px solid transparent; border-radius: 9px; }
+.photo-tile.selected { border-color: #346647; }
+.photo-tile img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+.photo-tile footer { font-size: 12px; overflow-wrap: anywhere; margin-top: 8px; }
+.photo-problem { aspect-ratio: 1; display: grid; place-items: center; background: #ece8df; font-size: 12px; padding: 12px; }
 .empty-library { text-align: center; padding: 100px 24px; }
+.app-status { padding: 10px 24px; border-top: 1px solid #d9ded5; font-size: 12px; display: flex; gap: 24px; }
+.feedback-message { position: fixed; z-index: 200; bottom: 30px; left: 50%; transform: translateX(-50%); background: #273b35; color: white; border-radius: 8px; padding: 12px 20px; max-width: 80vw; }
