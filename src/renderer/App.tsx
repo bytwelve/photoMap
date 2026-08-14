@@ -10,6 +10,14 @@ export function App(): React.JSX.Element {
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [version, setVersion] = useState('');
+  const [query, setQuery] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [province, setProvince] = useState('');
+  const [city, setCity] = useState('');
+  const [typeId, setTypeId] = useState('');
+  const [newType, setNewType] = useState('');
 
   async function execute(work: () => Promise<void>): Promise<void> {
     setBusy(true);
@@ -39,7 +47,61 @@ export function App(): React.JSX.Element {
 
   const library = raw ? toLibraryState(raw, names) : undefined;
   const allPhotos = library?.photos ?? [];
-  const photos = allPhotos;
+  const photos = allPhotos.filter((photo) => {
+    const locationMatch = !locationFilter || (locationFilter === 'unlocated' ? !photo.location : photo.location?.provinceCode === locationFilter || photo.location?.cityCode === locationFilter);
+    return locationMatch && (!typeFilter || photo.types.some((tag) => tag.id === typeFilter))
+      && (!query || [photo.name, photo.location?.provinceName, photo.location?.cityName, ...photo.types.map((tag) => tag.name)].some((value) => value?.includes(query)))
+      ;
+  });
+  useEffect(() => {
+    const visible = new Set(photos.map((photo) => photo.id));
+    setSelected((current) => new Set([...current].filter((id) => visible.has(id))));
+  }, [raw, query, locationFilter, typeFilter]);
+
+  function togglePhoto(id: string): void {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }
+
+  async function updateLocation(): Promise<void> {
+    await execute(async () => {
+      const result = unwrapResult(await window.photoMap.updateLocations({ photoIds: [...selected], location: province ? { provinceGb: province, ...(city ? { cityGb: city } : {}) } : null }));
+      setRaw(result.library);
+      setFeedback(`已更新 ${result.succeeded} 张照片的地点，失败 ${result.failed} 张`);
+    });
+  }
+
+  async function updateTypes(remove: boolean): Promise<void> {
+    if (!typeId) return;
+    await execute(async () => {
+      const result = unwrapResult(await window.photoMap.updateTypes({ photoIds: [...selected], addTypeIds: remove ? [] : [typeId], removeTypeIds: remove ? [typeId] : [] }));
+      setRaw(result.library);
+      setFeedback(`已更新 ${result.succeeded} 张照片的类型`);
+    });
+  }
+
+  async function createType(): Promise<void> {
+    if (!newType.trim()) return;
+    await execute(async () => {
+      const created = unwrapResult(await window.photoMap.createType({ name: newType.trim() }));
+      setRaw(unwrapResult(await window.photoMap.getLibrary()));
+      setTypeId(created.typeId);
+      setNewType('');
+    });
+  }
+
+  async function trashSelection(): Promise<void> {
+    if (selected.size === 0 || !window.confirm(`将 ${selected.size} 项源文件移入 Windows 回收站？`)) return;
+    await execute(async () => {
+      const result = unwrapResult(await window.photoMap.trashPhotos({ photoIds: [...selected], confirmed: true }));
+      setRaw(result.library);
+      setSelected(new Set());
+      setFeedback(`已移入回收站 ${result.items.filter((item) => item.status === 'moved').length} 项`);
+    });
+  }
 
   async function chooseSource(): Promise<void> {
     await execute(async () => {
@@ -62,8 +124,21 @@ export function App(): React.JSX.Element {
       {raw?.scan.status === 'running' && <button onClick={() => void execute(async () => { setRaw(unwrapResult(await window.photoMap.cancelScan()).library); })}>取消扫描</button>}
     </div>
     {!raw?.source ? <main className="empty-library"><h2>把照片放回走过的地方</h2><p>选择一个照片文件夹，递归扫描后建立本地索引。</p><button disabled={busy} onClick={() => void chooseSource()}>选择照片文件夹</button></main> : <div className="library-layout">
+      <aside className="library-sidebar">
+        <h2>组合筛选</h2><input aria-label="搜索照片" value={query} placeholder="照片名、地点、类型" onChange={(event) => setQuery(event.target.value)} />
+        <select aria-label="地点筛选" value={locationFilter} onChange={(event) => setLocationFilter(event.target.value)}><option value="">全部地点</option><option value="unlocated">未标记地点</option>{PROVINCES.map((region) => <option key={region.code} value={region.code}>{region.name}</option>)}{CITIES.map((region) => <option key={region.code} value={region.code}>{region.name}</option>)}</select>
+        <select aria-label="类型筛选" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="">全部类型</option>{library?.photoTypes.map((tag) => <option key={tag.id} value={tag.id}>{tag.name}</option>)}</select>
+        <h2>已选择 {selected.size} 项</h2><button onClick={() => setSelected(new Set(photos.map((photo) => photo.id)))}>全选当前结果</button><button onClick={() => setSelected(new Set())}>取消选择</button>
+        <select aria-label="标注省份" value={province} onChange={(event) => { setProvince(event.target.value); setCity(''); }}><option value="">清除地点</option>{PROVINCES.map((region) => <option key={region.code} value={region.code}>{region.name}</option>)}</select>
+        <select aria-label="标注城市" disabled={!province} value={city} onChange={(event) => setCity(event.target.value)}><option value="">仅标记省份</option>{CITIES.filter((region) => region.parentProvinceCode === province).map((region) => <option key={region.code} value={region.code}>{region.name}</option>)}</select>
+        <button disabled={busy || !selected.size} onClick={() => void updateLocation()}>应用地点</button>
+        <select aria-label="标注类型" value={typeId} onChange={(event) => setTypeId(event.target.value)}><option value="">选择类型</option>{library?.photoTypes.map((tag) => <option key={tag.id} value={tag.id}>{tag.name}</option>)}</select>
+        <button disabled={busy || !selected.size || !typeId} onClick={() => void updateTypes(false)}>添加类型</button><button disabled={busy || !selected.size || !typeId} onClick={() => void updateTypes(true)}>移除类型</button>
+        <input aria-label="新类型" placeholder="创建自定义类型" value={newType} onChange={(event) => setNewType(event.target.value)} /><button disabled={busy || !newType.trim()} onClick={() => void createType()}>创建类型</button>
+        <button disabled={busy || !selected.size} onClick={() => void trashSelection()}>移入回收站</button>
+      </aside>
       <section className="library-content">
-        {photos.length === 0 ? <div className="empty-library">没有符合条件的照片</div> : <div className="photo-grid">{photos.map((photo) => <article key={photo.id} className={'photo-tile'}>{photo.decodeState === 'valid' ? <img src={photo.thumbnailUrl} alt={photo.name} loading="lazy" /> : <div className="photo-problem">{photo.decodeMessage}</div>}<footer>{photo.name}</footer></article>)}</div>}
+        {photos.length === 0 ? <div className="empty-library">没有符合条件的照片</div> : <div className="photo-grid">{photos.map((photo) => <article key={photo.id} className={selected.has(photo.id) ? 'photo-tile selected' : 'photo-tile'}><label><input type="checkbox" aria-label={`选择 ${photo.name}`} checked={selected.has(photo.id)} onChange={() => togglePhoto(photo.id)} />选择</label>{photo.decodeState === 'valid' ? <img src={photo.thumbnailUrl} alt={photo.name} loading="lazy" /> : <div className="photo-problem">{photo.decodeMessage}</div>}<footer>{photo.name}<br />{photo.location?.cityName ?? photo.location?.provinceName ?? '未标记地点'} · {photo.types.map((tag) => tag.name).join('、')}</footer></article>)}</div>}
       </section>
     </div>}
     <footer className="app-status"><span>{photos.length} 项照片</span><span>扫描：{raw?.scan.status ?? 'idle'} · 已发现 {raw?.scan.counts.discovered ?? 0} 项 · 异常 {raw?.scan.counts.errors ?? 0} 项</span><span>完全离线 · {version}</span></footer>

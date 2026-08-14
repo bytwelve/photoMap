@@ -1,13 +1,13 @@
-import { nativeImage, } from 'electron';
+import { nativeImage, shell } from 'electron';
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
 import { readdir, stat, realpath, mkdir, writeFile, } from 'node:fs/promises';
 import path from 'node:path';
 import type { PhotoMapPaths } from './bootstrap/app-paths';
-import type { LibrarySnapshot, PhotoSummary, ScanProgress, } from '../shared/contracts';
+import type { BulkUpdateResult, LibrarySnapshot, PhotoSummary, PhotoType, ScanProgress, UpdateLocationsRequest, UpdateTypesRequest, TrashItemResult } from '../shared/contracts';
 import { photoMediaUrl, photoThumbnailUrl } from '../shared/media-url';
 import { PhotoMapError } from '../shared/errors';
-
+import { validateAdministrativeLocation } from '../shared/administrative-regions';
 
 type Row = Record<string, unknown>;
 export class PhotoLibrary {
@@ -116,10 +116,10 @@ PRAGMA user_version = 2; COMMIT;`);
       source: source ? { sourceId: String(source.source_id), displayName: path.basename(String(source.root_path)), availability: source.availability as 'available' | 'unavailable' | 'unknown' } : null,
       photos: rows.map((row): PhotoSummary => {
         const photoId = String(row.photo_id);
-        
-        return { photoId, fileName: path.basename(String(row.display_path)), folderPath: path.dirname(String(row.relative_path)), mediaUrl: photoMediaUrl(photoId), thumbnailUrl: photoThumbnailUrl(photoId), fileCreatedAtMs: row.file_created_at_ms === null ? null : Number(row.file_created_at_ms), captureTime: null, mediaKind: 'photo', mediaFormat: row.image_format as PhotoSummary['mediaFormat'], pixelWidth: row.pixel_width === null ? null : Number(row.pixel_width), pixelHeight: row.pixel_height === null ? null : Number(row.pixel_height), decodeState: row.decode_state as PhotoSummary['decodeState'], lifecycleState: row.lifecycle_state as PhotoSummary['lifecycleState'], location: null, typeIds: [], note: '' };
+        const place = this.database.prepare('SELECT * FROM photo_place WHERE photo_id = ?').get(photoId) as Row | undefined;
+        return { photoId, fileName: path.basename(String(row.display_path)), folderPath: path.dirname(String(row.relative_path)), mediaUrl: photoMediaUrl(photoId), thumbnailUrl: photoThumbnailUrl(photoId), fileCreatedAtMs: row.file_created_at_ms === null ? null : Number(row.file_created_at_ms), captureTime: null, mediaKind: 'photo', mediaFormat: row.image_format as PhotoSummary['mediaFormat'], pixelWidth: row.pixel_width === null ? null : Number(row.pixel_width), pixelHeight: row.pixel_height === null ? null : Number(row.pixel_height), decodeState: row.decode_state as PhotoSummary['decodeState'], lifecycleState: row.lifecycle_state as PhotoSummary['lifecycleState'], location: place ? {provinceGb:String(place.province_gb),...(place.city_gb ? {cityGb:String(place.city_gb)} : {})} : null, typeIds: (this.database.prepare('SELECT type_id FROM photo_type_link WHERE photo_id = ?').all(photoId) as Row[]).map(link=>String(link.type_id)), note: '' };
       }),
-      photoTypes: [],
+      photoTypes: (this.database.prepare('SELECT * FROM photo_type ORDER BY name').all() as Row[]).map(row=>({typeId:String(row.type_id),name:String(row.name),isBuiltin:Boolean(row.is_builtin)})),
       scan: this.progress,
       catalogRevision: Number((this.database.prepare("SELECT value FROM metadata WHERE key = 'catalog_revision'").get() as Row).value),
     };
@@ -221,4 +221,52 @@ PRAGMA user_version = 2; COMMIT;`);
     return thumbnail ? path.join(this.paths.thumbnailRoot,photoId+'.png') : String(row.display_path);
   }
   
+  private updateRows(photoIds: string[],operation: (photoId: string) => void): BulkUpdateResult {
+    let succeeded = 0, skipped = 0;
+    this.database.exec('BEGIN');
+    try {
+      for (const photoId of new Set(photoIds)) {
+        if (!this.database.prepare("SELECT photo_id FROM photo WHERE photo_id = ? AND lifecycle_state = 'active'").get(photoId)) { skipped++;continue; }
+        operation(photoId);succeeded++;
+      }
+      this.revision();this.database.exec('COMMIT');
+    } catch(error) { this.database.exec('ROLLBACK');throw error; }
+    return {succeeded,skipped,failed:0,library:this.snapshot()};
+  }
+  updateLocations(request: UpdateLocationsRequest): BulkUpdateResult {
+    if (request.location && !validateAdministrativeLocation(request.location).valid) throw new PhotoMapError('INVALID_REQUEST','地点信息无效。');
+    return this.updateRows(request.photoIds,(id)=>{
+      if (!request.location) this.database.prepare('DELETE FROM photo_place WHERE photo_id = ?').run(id);
+      else this.database.prepare('INSERT INTO photo_place(photo_id,province_gb,city_gb,assigned_at) VALUES(?,?,?,?) ON CONFLICT(photo_id) DO UPDATE SET province_gb=excluded.province_gb,city_gb=excluded.city_gb,assigned_at=excluded.assigned_at').run(id,request.location.provinceGb,request.location.cityGb ?? null,new Date().toISOString());
+    });
+  }
+  updateTypes(request: UpdateTypesRequest): BulkUpdateResult {
+    return this.updateRows(request.photoIds,(id)=>{
+      for (const typeId of request.removeTypeIds) this.database.prepare('DELETE FROM photo_type_link WHERE photo_id = ? AND type_id = ?').run(id,typeId);
+      for (const typeId of request.addTypeIds) this.database.prepare('INSERT OR IGNORE INTO photo_type_link(photo_id,type_id,assigned_at) VALUES(?,?,?)').run(id,typeId,new Date().toISOString());
+    });
+  }
+  createType(name: string): PhotoType {
+    const cleaned = name.trim();
+    if (!cleaned || cleaned.length > 30) throw new PhotoMapError('INVALID_REQUEST','类型名称长度无效。');
+    const typeId = randomUUID(),now = new Date().toISOString();
+    this.database.prepare('INSERT INTO photo_type(type_id,name,normalized_name,is_builtin,created_at,updated_at) VALUES(?,?,?,0,?,?)').run(typeId,cleaned,cleaned.toLowerCase(),now,now);
+    this.revision();return {typeId,name:cleaned,isBuiltin:false};
+  }
+  async trash(photoIds: string[]): Promise<{items: TrashItemResult[]; library: LibrarySnapshot}> {
+    if (this.scanning) throw new PhotoMapError('RECYCLE_FAILED','请等待扫描结束。');
+    const items: TrashItemResult[] = [];
+    for (const photoId of new Set(photoIds)) {
+      const row = this.database.prepare("SELECT * FROM photo WHERE photo_id = ? AND lifecycle_state = 'active'").get(photoId) as Row | undefined;
+      if (!row) { items.push({photoId,status:'not_found'});continue; }
+      try {
+        
+        await shell.trashItem(String(row.display_path));
+        this.database.prepare("UPDATE photo SET lifecycle_state = 'trashed' WHERE photo_id = ?").run(photoId);
+        items.push({photoId,status:'moved'});
+      } catch { items.push({photoId,status:'failed'}); }
+    }
+    this.revision();return {items,library:this.snapshot()};
+  }
+
 }

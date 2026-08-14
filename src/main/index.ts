@@ -9,6 +9,7 @@ import type { AppSettings,WindowAction } from '../shared/contracts';
 import { parseAppSettings } from '../shared/settings';
 import { PhotoMapError } from '../shared/errors';
 import { PhotoLibrary } from './library';
+import { parseUpdateLocationsRequest,parseUpdateTypesRequest,parseCreateTypeRequest,parseTrashPhotosRequest } from '../shared/schemas';
 
 if (started) app.quit();
 app.setName('PhotoMap');
@@ -42,6 +43,10 @@ app.whenReady().then(async()=>{
   handle(PHOTO_MAP_CHANNELS.chooseLibrary,async()=>{const result=await dialog.showOpenDialog(window,{properties:['openDirectory'],title:'选择照片文件夹'});if(result.canceled||!result.filePaths[0])return {cancelled:true,library:library.snapshot()};return {cancelled:false,library:await library.activate(result.filePaths[0])};});
   handle(PHOTO_MAP_CHANNELS.refreshLibrary,()=>library.scan());
   handle(PHOTO_MAP_CHANNELS.cancelScan,()=>library.cancel());
+  handle(PHOTO_MAP_CHANNELS.updateLocations,value=>library.updateLocations(parseUpdateLocationsRequest(value)));
+  handle(PHOTO_MAP_CHANNELS.updateTypes,value=>library.updateTypes(parseUpdateTypesRequest(value)));
+  handle(PHOTO_MAP_CHANNELS.createType,value=>library.createType(parseCreateTypeRequest(value).name));
+  handle(PHOTO_MAP_CHANNELS.trashPhotos,value=>library.trash(parseTrashPhotosRequest(value).photoIds));
 
   await window.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 });

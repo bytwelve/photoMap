@@ -13,6 +13,8 @@ input, select, textarea { min-width: 0; border: 1px solid #c6d1c8; border-radius
 .app-header nav { display: flex; gap: 6px; }
 .source-toolbar { display: flex; gap: 12px; align-items: center; padding: 14px 24px; }
 .library-layout { display: flex; min-height: calc(100vh - 175px); }
+.library-sidebar { flex: 0 0 260px; display: flex; flex-direction: column; gap: 10px; padding: 18px; border-right: 1px solid #d9ded5; overflow: auto; }
+.library-sidebar h2 { font-size: 15px; margin: 12px 0 0; }
 .library-content { flex: 1; min-width: 0; padding: 20px; }
 .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px; }
 .photo-tile { overflow: hidden; background: #fffdf9; padding: 8px; border: 2px solid transparent; border-radius: 9px; }
