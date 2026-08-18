@@ -1,3 +1,4 @@
+import path from 'node:path';
 import type { ForgeConfig } from '@electron-forge/shared-types';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { WebpackPlugin } from '@electron-forge/plugin-webpack';
@@ -5,11 +6,13 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import { mainConfig } from './webpack.main';
 import { rendererConfig } from './webpack.renderer';
 
+const runtimeMap = path.resolve(__dirname, 'resources/map');
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     executableName: 'PhotoMap',
+    extraResource: [runtimeMap],
     name: 'PhotoMap'
   },
   rebuildConfig: {},

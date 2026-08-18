@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react';
 import type { LibrarySnapshot, WindowAction } from '../shared/contracts';
 import { PROVINCES, CITIES } from '../shared/administrative-regions';
 import { errorMessage, regionNamesFromOptions, toLibraryState, unwrapResult } from './bridge';
+import { PHOTO_MAP_ASSETS, DEFAULT_APP_SETTINGS } from '../shared/contracts';
+import type { MapSnapshot, RegionCollection, SelectedRegion, WallPhotoSelections } from './model';
+import type { RendererMapPreference } from './settings';
+import { PhotoWall } from './features/photo-wall/PhotoWall';
+import { loadRegionCollection } from './map-scene/scene';
 
 const names = regionNamesFromOptions(PROVINCES, CITIES);
 
@@ -18,6 +23,13 @@ export function App(): React.JSX.Element {
   const [city, setCity] = useState('');
   const [typeId, setTypeId] = useState('');
   const [newType, setNewType] = useState('');
+  const [mode, setMode] = useState<'batch' | 'wall' | 'memory'>('wall');
+  const [provinces, setProvinces] = useState<RegionCollection>();
+  const [cities, setCities] = useState<RegionCollection>();
+  const [mapError, setMapError] = useState('');
+  const [mapPreference, setMapPreference] = useState<RendererMapPreference>(DEFAULT_APP_SETTINGS.map);
+  const [selectedRegion, setSelectedRegion] = useState<SelectedRegion>();
+  const [fixedPhotos, setFixedPhotos] = useState<WallPhotoSelections>(new Map());
 
   async function execute(work: () => Promise<void>): Promise<void> {
     setBusy(true);
@@ -30,6 +42,7 @@ export function App(): React.JSX.Element {
       setRaw(unwrapResult(await window.photoMap.getLibrary()));
       const info = unwrapResult(await window.photoMap.getAppInfo());
       setVersion(info.version);
+      await loadMaps();
     });
     return window.photoMap.subscribeScanProgress((scan) => {
       setRaw((current) => current ? { ...current, scan } : current);
@@ -103,6 +116,22 @@ export function App(): React.JSX.Element {
     });
   }
 
+  async function loadMaps(): Promise<void> {
+    try {
+      const [provinceData, cityData] = await Promise.all([loadRegionCollection(PHOTO_MAP_ASSETS.provinceMap), loadRegionCollection(PHOTO_MAP_ASSETS.cityMap)]);
+      setProvinces(provinceData);
+      setCities(cityData);
+      setMapError('');
+    } catch (error) { setMapError(errorMessage(error)); }
+  }
+
+  function fixSelectedPhotos(): void {
+    if (!selectedRegion) return;
+    const key = `${selectedRegion.level}:${selectedRegion.code}`;
+    setFixedPhotos((current) => new Map(current).set(key, [...selected]));
+    setFeedback(`已固定 ${selected.size} 张照片`);
+  }
+
   async function chooseSource(): Promise<void> {
     await execute(async () => {
       const result = unwrapResult(await window.photoMap.chooseLibrary());
@@ -118,6 +147,7 @@ export function App(): React.JSX.Element {
 
   return <div className="desktop-app" data-testid="app-shell">
     <header className="app-header"><h1>用照片拼地图</h1>
+      <nav><button className={mode === 'wall' ? 'active' : ''} onClick={() => setMode('wall')}>照片墙</button><button className={mode === 'batch' ? 'active' : ''} onClick={() => setMode('batch')}>批量整理</button></nav>
       <button onClick={() => windowAction('minimize')}>最小化</button><button onClick={() => windowAction('toggleMaximize')}>最大化</button><button onClick={() => windowAction('close')}>关闭</button>
     </header>
     <div className="source-toolbar"><strong>{library?.sourceName ?? '尚未选择照片文件夹'}</strong><button disabled={busy} onClick={() => void chooseSource()}>选择照片文件夹</button><button disabled={busy || !raw?.source} onClick={() => void refresh()}>重新扫描</button>
@@ -136,9 +166,11 @@ export function App(): React.JSX.Element {
         <button disabled={busy || !selected.size || !typeId} onClick={() => void updateTypes(false)}>添加类型</button><button disabled={busy || !selected.size || !typeId} onClick={() => void updateTypes(true)}>移除类型</button>
         <input aria-label="新类型" placeholder="创建自定义类型" value={newType} onChange={(event) => setNewType(event.target.value)} /><button disabled={busy || !newType.trim()} onClick={() => void createType()}>创建类型</button>
         <button disabled={busy || !selected.size} onClick={() => void trashSelection()}>移入回收站</button>
+        {selectedRegion && <><h2>{selectedRegion.name}</h2><button onClick={() => { setLocationFilter(selectedRegion.code); setMode('batch'); }}>整理该区域照片</button><button disabled={!selected.size} onClick={fixSelectedPhotos}>固定已选照片</button><button onClick={() => setFixedPhotos((current) => { const value = new Map(current); value.delete(`${selectedRegion.level}:${selectedRegion.code}`); return value; })}>恢复自动选片</button></>}
       </aside>
       <section className="library-content">
-        {photos.length === 0 ? <div className="empty-library">没有符合条件的照片</div> : <div className="photo-grid">{photos.map((photo) => <article key={photo.id} className={selected.has(photo.id) ? 'photo-tile selected' : 'photo-tile'}><label><input type="checkbox" aria-label={`选择 ${photo.name}`} checked={selected.has(photo.id)} onChange={() => togglePhoto(photo.id)} />选择</label>{photo.decodeState === 'valid' ? <img src={photo.thumbnailUrl} alt={photo.name} loading="lazy" /> : <div className="photo-problem">{photo.decodeMessage}</div>}<footer>{photo.name}<br />{photo.location?.cityName ?? photo.location?.provinceName ?? '未标记地点'} · {photo.types.map((tag) => tag.name).join('、')}</footer></article>)}</div>}
+        {mode === 'wall' ? <PhotoWall provinces={provinces} cities={cities} mapError={mapError} photos={allPhotos} fixedPhotoSelections={fixedPhotos} selectedRegion={selectedRegion} mapPreference={mapPreference} onMapPreferenceChange={setMapPreference} onSelectedRegionChange={setSelectedRegion} onSnapshotChange={(_snapshot: MapSnapshot) => undefined} /> :
+photos.length === 0 ? <div className="empty-library">没有符合条件的照片</div> : <div className="photo-grid">{photos.map((photo) => <article key={photo.id} className={selected.has(photo.id) ? 'photo-tile selected' : 'photo-tile'}><label><input type="checkbox" aria-label={`选择 ${photo.name}`} checked={selected.has(photo.id)} onChange={() => togglePhoto(photo.id)} />选择</label>{photo.decodeState === 'valid' ? <img src={photo.thumbnailUrl} alt={photo.name} loading="lazy" /> : <div className="photo-problem">{photo.decodeMessage}</div>}<footer>{photo.name}<br />{photo.location?.cityName ?? photo.location?.provinceName ?? '未标记地点'} · {photo.types.map((tag) => tag.name).join('、')}</footer></article>)}</div>}
       </section>
     </div>}
     <footer className="app-status"><span>{photos.length} 项照片</span><span>扫描：{raw?.scan.status ?? 'idle'} · 已发现 {raw?.scan.counts.discovered ?? 0} 项 · 异常 {raw?.scan.counts.errors ?? 0} 项</span><span>完全离线 · {version}</span></footer>

@@ -2,6 +2,7 @@ import { app, dialog, ipcMain, net, protocol } from 'electron';
 import started from 'electron-squirrel-startup';
 import { readFile, writeFile, stat } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
+import path from 'node:path';
 import { configureAppPaths,initializeAppDirectories } from './bootstrap/app-paths';
 import { createMainWindow } from './bootstrap/create-window';
 import { DEFAULT_APP_SETTINGS,PHOTO_MAP_CHANNELS } from '../shared/contracts';
@@ -34,6 +35,11 @@ app.whenReady().then(async()=>{
     try {await stat(filePath);return net.fetch(pathToFileURL(filePath).href,{headers:request.headers});}catch{return new Response(null,{status:404});}
   });
   window.once('closed',()=>library.close());
+  protocol.handle('photomap-asset',async(request)=>{
+    const url=new URL(request.url),name=path.basename(url.pathname);
+    if(url.hostname!=='data'||!['china-provinces.geojson','china-city-view.geojson'].includes(name))return new Response(null,{status:404});
+    try{return net.fetch(pathToFileURL(path.join(paths.assetRoot,'data',name)).href);}catch{return new Response(null,{status:404});}
+  });
 
   handle(PHOTO_MAP_CHANNELS.getAppInfo,async()=>({name:app.getName(),version:app.getVersion(),platform:process.platform,isPackaged:app.isPackaged,mapData:{ready:true,items:[],completed:0,total:0}}));
   handle(PHOTO_MAP_CHANNELS.getSettings,()=>settings);
