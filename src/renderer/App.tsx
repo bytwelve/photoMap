@@ -30,6 +30,7 @@ export function App(): React.JSX.Element {
   const [mapPreference, setMapPreference] = useState<RendererMapPreference>(DEFAULT_APP_SETTINGS.map);
   const [selectedRegion, setSelectedRegion] = useState<SelectedRegion>();
   const [fixedPhotos, setFixedPhotos] = useState<WallPhotoSelections>(new Map());
+  const [activeId, setActiveId] = useState('');
 
   async function execute(work: () => Promise<void>): Promise<void> {
     setBusy(true);
@@ -131,6 +132,26 @@ export function App(): React.JSX.Element {
     setFixedPhotos((current) => new Map(current).set(key, [...selected]));
     setFeedback(`已固定 ${selected.size} 张照片`);
   }
+  const activeIndex = Math.max(0, photos.findIndex((photo) => photo.id === activeId));
+  const active = photos[activeIndex];
+  const previous = photos[activeIndex - 1];
+  const next = photos[activeIndex + 1];
+
+  function navigate(direction: number): void {
+    const target = photos[Math.max(0, Math.min(photos.length - 1, activeIndex + direction))];
+    if (target) setActiveId(target.id);
+  }
+
+  useEffect(() => {
+    if (mode !== 'memory') return;
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement) return;
+      if (event.key === 'ArrowLeft') navigate(-1);
+      if (event.key === 'ArrowRight') navigate(1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mode, activeIndex, photos]);
 
   async function chooseSource(): Promise<void> {
     await execute(async () => {
@@ -147,7 +168,7 @@ export function App(): React.JSX.Element {
 
   return <div className="desktop-app" data-testid="app-shell">
     <header className="app-header"><h1>用照片拼地图</h1>
-      <nav><button className={mode === 'wall' ? 'active' : ''} onClick={() => setMode('wall')}>照片墙</button><button className={mode === 'batch' ? 'active' : ''} onClick={() => setMode('batch')}>批量整理</button></nav>
+      <nav><button className={mode === 'wall' ? 'active' : ''} onClick={() => setMode('wall')}>照片墙</button><button className={mode === 'memory' ? 'active' : ''} onClick={() => setMode('memory')}>堆叠回忆</button><button className={mode === 'batch' ? 'active' : ''} onClick={() => setMode('batch')}>批量整理</button></nav>
       <button onClick={() => windowAction('minimize')}>最小化</button><button onClick={() => windowAction('toggleMaximize')}>最大化</button><button onClick={() => windowAction('close')}>关闭</button>
     </header>
     <div className="source-toolbar"><strong>{library?.sourceName ?? '尚未选择照片文件夹'}</strong><button disabled={busy} onClick={() => void chooseSource()}>选择照片文件夹</button><button disabled={busy || !raw?.source} onClick={() => void refresh()}>重新扫描</button>
@@ -170,7 +191,8 @@ export function App(): React.JSX.Element {
       </aside>
       <section className="library-content">
         {mode === 'wall' ? <PhotoWall provinces={provinces} cities={cities} mapError={mapError} photos={allPhotos} fixedPhotoSelections={fixedPhotos} selectedRegion={selectedRegion} mapPreference={mapPreference} onMapPreferenceChange={setMapPreference} onSelectedRegionChange={setSelectedRegion} onSnapshotChange={(_snapshot: MapSnapshot) => undefined} /> :
-photos.length === 0 ? <div className="empty-library">没有符合条件的照片</div> : <div className="photo-grid">{photos.map((photo) => <article key={photo.id} className={selected.has(photo.id) ? 'photo-tile selected' : 'photo-tile'}><label><input type="checkbox" aria-label={`选择 ${photo.name}`} checked={selected.has(photo.id)} onChange={() => togglePhoto(photo.id)} />选择</label>{photo.decodeState === 'valid' ? <img src={photo.thumbnailUrl} alt={photo.name} loading="lazy" /> : <div className="photo-problem">{photo.decodeMessage}</div>}<footer>{photo.name}<br />{photo.location?.cityName ?? photo.location?.provinceName ?? '未标记地点'} · {photo.types.map((tag) => tag.name).join('、')}</footer></article>)}</div>}
+        mode === 'memory' ? active ? <section className="memory-workspace"><div className="memory-deck"><div className="memory-paper back-two" /><div className="memory-paper back-one" /><figure className="memory-paper front">{active.decodeState === 'valid' ? <img src={active.mediaUrl} alt={active.name} /> : <div className="photo-problem">{active.decodeMessage}</div>}<figcaption>{active.name} · {active.location?.cityName ?? active.location?.provinceName ?? '未标记地点'}</figcaption></figure></div><div className="memory-controls"><button disabled={!previous} onClick={() => navigate(-1)}>上一张</button><span>{activeIndex + 1} / {photos.length}</span><button disabled={!next} onClick={() => navigate(1)}>{'下一张'}</button><button onClick={() => setSelected(new Set([active.id]))}>标注此照片</button></div><div className="memory-thumbnails">{photos.map((photo) => <button key={photo.id} className={photo.id === active.id ? 'active' : ''} onClick={() => setActiveId(photo.id)}><img src={photo.thumbnailUrl} alt={photo.name} /></button>)}</div></section> : <div className="empty-library">没有符合筛选的照片</div> :
+photos.length === 0 ? <div className="empty-library">没有符合条件的照片</div> : <div className="photo-grid">{photos.map((photo) => <article key={photo.id} className={selected.has(photo.id) ? 'photo-tile selected' : 'photo-tile'}><label><input type="checkbox" aria-label={`选择 ${photo.name}`} checked={selected.has(photo.id)} onChange={() => togglePhoto(photo.id)} />选择</label>{photo.decodeState === 'valid' ? <img src={photo.thumbnailUrl} alt={photo.name} loading="lazy" onDoubleClick={() => { setActiveId(photo.id); setMode('memory'); }} /> : <div className="photo-problem">{photo.decodeMessage}</div>}<footer>{photo.name}<br />{photo.location?.cityName ?? photo.location?.provinceName ?? '未标记地点'} · {photo.types.map((tag) => tag.name).join('、')}</footer></article>)}</div>}
       </section>
     </div>}
     <footer className="app-status"><span>{photos.length} 项照片</span><span>扫描：{raw?.scan.status ?? 'idle'} · 已发现 {raw?.scan.counts.discovered ?? 0} 项 · 异常 {raw?.scan.counts.errors ?? 0} 项</span><span>完全离线 · {version}</span></footer>
