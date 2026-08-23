@@ -10,7 +10,9 @@ import type { AppSettings,WindowAction } from '../shared/contracts';
 import { parseAppSettings } from '../shared/settings';
 import { PhotoMapError } from '../shared/errors';
 import { PhotoLibrary } from './library';
-import { parseUpdateLocationsRequest,parseUpdateTypesRequest,parseCreateTypeRequest,parseTrashPhotosRequest } from '../shared/schemas';
+import { parseUpdateLocationsRequest,parseUpdateTypesRequest,parseCreateTypeRequest,parseTrashPhotosRequest,parseSaveExportRequest } from '../shared/schemas';
+import { AtomicExportService } from './services/export/atomic-export';
+import { ElectronExportEncoder } from './services/export/electron-export-encoder';
 
 if (started) app.quit();
 app.setName('PhotoMap');
@@ -53,6 +55,11 @@ app.whenReady().then(async()=>{
   handle(PHOTO_MAP_CHANNELS.updateTypes,value=>library.updateTypes(parseUpdateTypesRequest(value)));
   handle(PHOTO_MAP_CHANNELS.createType,value=>library.createType(parseCreateTypeRequest(value).name));
   handle(PHOTO_MAP_CHANNELS.trashPhotos,value=>library.trash(parseTrashPhotosRequest(value).photoIds));
+  handle(PHOTO_MAP_CHANNELS.saveExport,async(value)=>{
+    const request=parseSaveExportRequest(value),result=await dialog.showSaveDialog(window,{defaultPath:path.join(app.getPath('pictures'),path.basename(request.suggestedName)),filters:[{name:'PNG 图像',extensions:['png']}]});
+    if(result.canceled||!result.filePath)return {cancelled:true};
+    await new AtomicExportService(new ElectronExportEncoder()).save(result.filePath,request);return {cancelled:false,savedPath:result.filePath};
+  });
 
   await window.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 });

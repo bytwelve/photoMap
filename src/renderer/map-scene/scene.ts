@@ -17,6 +17,12 @@ import {
   TERRAIN_BOUNDS,
 } from './projection';
 import {
+  createDefaultShareDocument,
+  updateShareText,
+  type ShareDocument,
+  type ShareTextElement,
+} from '../share-document';
+import {
   createCollageLayout,
   type CollagePoint,
 } from './collage-layout';
@@ -59,6 +65,13 @@ export interface DrawSceneOptions {
   originX?: number;
   originY?: number;
   clear?: boolean;
+}
+
+export interface ExportSpec {
+  currentWidth: number;
+  currentHeight: number;
+  document?: ShareDocument;
+  title?: string;
 }
 
 const imagePromises = new Map<string, Promise<HTMLImageElement>>();
@@ -440,4 +453,95 @@ export async function loadSceneImages(snapshot: MapSnapshot): Promise<SceneImage
     nationalOutline,
     photos: new Map(loadedPhotos.filter((entry): entry is readonly [string, HTMLImageElement] => Boolean(entry))),
   };
+}
+
+function drawShareText(context: CanvasRenderingContext2D, text: ShareTextElement): void {
+  const content = text.text.trim();
+  if (!content) return;
+  const { rect } = text;
+  context.save();
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.beginPath();
+  context.rect(rect.x, rect.y, rect.width, rect.height);
+  context.clip();
+  context.fillStyle = text.color;
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.font = `${text.weight} ${text.fontSize}px "Microsoft YaHei UI", "Microsoft YaHei", sans-serif`;
+  const measuredWidth = Math.max(1, context.measureText(content).width);
+  const requestedScale = Math.max(0.55, Math.min(1.65, text.compactness));
+  const fittedScale = Math.min(requestedScale, Math.max(0.2, (rect.width - 24) / measuredWidth));
+  context.translate(rect.x + rect.width / 2, rect.y + rect.height / 2);
+  context.scale(fittedScale, 1);
+  context.fillText(content, 0, 0);
+  context.restore();
+}
+
+export function drawShareCard(
+  context: CanvasRenderingContext2D,
+  options: {
+    snapshot: MapSnapshot;
+    images: SceneImages;
+    document: ShareDocument;
+  },
+): ShareDocument {
+  const document = options.document;
+  context.save();
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.clearRect(0, 0, document.width, document.height);
+  context.fillStyle = '#fffdf9';
+  context.fillRect(0, 0, document.width, document.height);
+  context.strokeStyle = '#e1d7cb';
+  context.lineWidth = 2;
+  context.strokeRect(1, 1, document.width - 2, document.height - 2);
+  context.restore();
+
+  drawMapScene(context, {
+    width: document.photo.rect.width,
+    height: document.photo.rect.height,
+    originX: document.photo.rect.x,
+    originY: document.photo.rect.y,
+    clear: false,
+    snapshot: options.snapshot,
+    images: options.images,
+  });
+
+  context.save();
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.strokeStyle = '#cfc2b3';
+  context.lineWidth = 3;
+  context.strokeRect(
+    document.photo.rect.x + 1.5,
+    document.photo.rect.y + 1.5,
+    document.photo.rect.width - 3,
+    document.photo.rect.height - 3,
+  );
+  context.restore();
+
+  for (const text of document.texts) drawShareText(context, text);
+  return document;
+}
+
+export async function renderSnapshotToDataUrl(snapshot: MapSnapshot, spec: ExportSpec): Promise<string> {
+  const defaultDocument = createDefaultShareDocument({
+    width: spec.currentWidth,
+    height: spec.currentHeight,
+  });
+  const shareDocument = spec.document
+    ?? (spec.title === undefined
+      ? defaultDocument
+      : updateShareText(defaultDocument, 'text-1', { text: spec.title }));
+  const dimensions = { width: shareDocument.width, height: shareDocument.height };
+  const canvas = document.createElement('canvas');
+  canvas.width = dimensions.width;
+  canvas.height = dimensions.height;
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('当前设备无法创建导出画布');
+  const images = await loadSceneImages(snapshot);
+  drawShareCard(context, {
+    snapshot,
+    images,
+    document: shareDocument,
+  });
+  return canvas.toDataURL('image/png');
 }
