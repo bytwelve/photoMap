@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { LibrarySnapshot, WindowAction } from '../shared/contracts';
+import type { LibrarySnapshot, WindowAction, MapDataStatus } from '../shared/contracts';
 import { PROVINCES, CITIES } from '../shared/administrative-regions';
 import { errorMessage, regionNamesFromOptions, toLibraryState, unwrapResult } from './bridge';
 import { PHOTO_MAP_ASSETS, DEFAULT_APP_SETTINGS } from '../shared/contracts';
@@ -8,6 +8,7 @@ import type { RendererMapPreference } from './settings';
 import { PhotoWall } from './features/photo-wall/PhotoWall';
 import { loadRegionCollection } from './map-scene/scene';
 import { ExportDialog } from './features/export/ExportDialog';
+import { MapDataSetup } from './components/MapDataSetup';
 
 const names = regionNamesFromOptions(PROVINCES, CITIES);
 
@@ -34,6 +35,8 @@ export function App(): React.JSX.Element {
   const [activeId, setActiveId] = useState('');
   const [snapshot, setSnapshot] = useState<MapSnapshot>();
   const [exportOpen, setExportOpen] = useState(false);
+  const [mapData, setMapData] = useState<MapDataStatus>();
+  const [mapBusy, setMapBusy] = useState(false);
 
   async function execute(work: () => Promise<void>): Promise<void> {
     setBusy(true);
@@ -46,7 +49,8 @@ export function App(): React.JSX.Element {
       setRaw(unwrapResult(await window.photoMap.getLibrary()));
       const info = unwrapResult(await window.photoMap.getAppInfo());
       setVersion(info.version);
-      await loadMaps();
+      setMapData(info.mapData);
+      if (info.mapData.ready) await loadMaps();
     });
     return window.photoMap.subscribeScanProgress((scan) => {
       setRaw((current) => current ? { ...current, scan } : current);
@@ -156,6 +160,17 @@ export function App(): React.JSX.Element {
     return () => window.removeEventListener('keydown', onKey);
   }, [mode, activeIndex, photos]);
 
+  async function importMaps(): Promise<void> {
+    setMapBusy(true);
+    try {
+      const result = unwrapResult(await window.photoMap.importMapData());
+      setMapData(result.status);
+      if (result.status.ready) await loadMaps();
+      if (result.rejected.length) setFeedback(`有 ${result.rejected.length} 份地图未通过校验`);
+    } catch (error) { setFeedback(errorMessage(error)); }
+    finally { setMapBusy(false); }
+  }
+
   async function chooseSource(): Promise<void> {
     await execute(async () => {
       const result = unwrapResult(await window.photoMap.chooseLibrary());
@@ -178,7 +193,8 @@ export function App(): React.JSX.Element {
       {raw?.scan.status === 'running' && <button onClick={() => void execute(async () => { setRaw(unwrapResult(await window.photoMap.cancelScan()).library); })}>取消扫描</button>}
       {mode === 'wall' && <button disabled={!snapshot} onClick={() => setExportOpen(true)}>导出分享图</button>}
     </div>
-    {!raw?.source ? <main className="empty-library"><h2>把照片放回走过的地方</h2><p>选择一个照片文件夹，递归扫描后建立本地索引。</p><button disabled={busy} onClick={() => void chooseSource()}>选择照片文件夹</button></main> : <div className="library-layout">
+    {mode === 'wall' && !mapData?.ready ? mapData ? <MapDataSetup status={mapData} busy={mapBusy} onDownload={() => void execute(async () => { unwrapResult(await window.photoMap.openMapDownload()); })} onImport={() => void importMaps()} /> : <main className="empty-library"><h2>正在确认地图数据状态</h2><button onClick={() => void execute(async () => { setMapData(unwrapResult(await window.photoMap.getAppInfo()).mapData); })}>重试</button></main> :
+    !raw?.source ? <main className="empty-library"><h2>把照片放回走过的地方</h2><p>选择一个照片文件夹，递归扫描后建立本地索引。</p><button disabled={busy} onClick={() => void chooseSource()}>选择照片文件夹</button></main> : <div className="library-layout">
       <aside className="library-sidebar">
         <h2>组合筛选</h2><input aria-label="搜索照片" value={query} placeholder="照片名、地点、类型" onChange={(event) => setQuery(event.target.value)} />
         <select aria-label="地点筛选" value={locationFilter} onChange={(event) => setLocationFilter(event.target.value)}><option value="">全部地点</option><option value="unlocated">未标记地点</option>{PROVINCES.map((region) => <option key={region.code} value={region.code}>{region.name}</option>)}{CITIES.map((region) => <option key={region.code} value={region.code}>{region.name}</option>)}</select>

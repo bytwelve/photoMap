@@ -44,3 +44,6 @@ releases/
 *.key
 *.pfx
 *.p12
+
+# 自行下载的上游地图数据，不随开源仓库分发
+*.geojson

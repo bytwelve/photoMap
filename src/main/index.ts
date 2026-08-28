@@ -13,6 +13,10 @@ import { PhotoLibrary } from './library';
 import { parseUpdateLocationsRequest,parseUpdateTypesRequest,parseCreateTypeRequest,parseTrashPhotosRequest,parseSaveExportRequest } from '../shared/schemas';
 import { AtomicExportService } from './services/export/atomic-export';
 import { ElectronExportEncoder } from './services/export/electron-export-encoder';
+import { shell } from 'electron';
+import { MapDataService } from './services/map-data/map-data-service';
+import { RegionCatalog } from './services/regions/region-catalog';
+import manifest from '../shared/map-data-manifest.json';
 
 if (started) app.quit();
 app.setName('PhotoMap');
@@ -29,6 +33,7 @@ app.whenReady().then(async()=>{
       return {ok:true,value:await operation(value)};
     } catch(error) {return {ok:false,error:{code:error instanceof PhotoMapError ? error.code : 'UNKNOWN_ERROR',userMessage:error instanceof Error ? error.message : '操作失败。',scope:'task',retryability:'retry'}};}
   });
+  const regions=new RegionCatalog(),mapData=new MapDataService(paths.mapDataDirectory,regions);await mapData.initialize();
   const library = new PhotoLibrary(paths,progress=>{if(!window.isDestroyed())window.webContents.send(PHOTO_MAP_CHANNELS.scanProgress,progress);});
   protocol.handle('photomap-media',async(request)=>{
     const url=new URL(request.url);if(url.hostname!=='photo')return new Response(null,{status:404});
@@ -40,10 +45,10 @@ app.whenReady().then(async()=>{
   protocol.handle('photomap-asset',async(request)=>{
     const url=new URL(request.url),name=path.basename(url.pathname);
     if(url.hostname!=='data'||!['china-provinces.geojson','china-city-view.geojson'].includes(name))return new Response(null,{status:404});
-    try{return net.fetch(pathToFileURL(path.join(paths.assetRoot,'data',name)).href);}catch{return new Response(null,{status:404});}
+    try{return net.fetch(pathToFileURL(path.join(paths.mapDataDirectory,name)).href);}catch{return new Response(null,{status:404});}
   });
 
-  handle(PHOTO_MAP_CHANNELS.getAppInfo,async()=>({name:app.getName(),version:app.getVersion(),platform:process.platform,isPackaged:app.isPackaged,mapData:{ready:true,items:[],completed:0,total:0}}));
+  handle(PHOTO_MAP_CHANNELS.getAppInfo,async()=>({name:app.getName(),version:app.getVersion(),platform:process.platform,isPackaged:app.isPackaged,mapData:await mapData.getStatus()}));
   handle(PHOTO_MAP_CHANNELS.getSettings,()=>settings);
   handle(PHOTO_MAP_CHANNELS.updateSettings,async(value)=>{settings=parseAppSettings(value);await writeFile(paths.settingsPath,JSON.stringify(settings),'utf8');return settings;});
   handle(PHOTO_MAP_CHANNELS.windowAction,(value)=>{const action=value as WindowAction;if(action==='minimize')window.minimize();else if(action==='toggleMaximize'){if(window.isMaximized())window.unmaximize();else window.maximize();}else if(action==='close')window.close();return {maximized:window.isMaximized()};});
@@ -60,6 +65,14 @@ app.whenReady().then(async()=>{
     if(result.canceled||!result.filePath)return {cancelled:true};
     await new AtomicExportService(new ElectronExportEncoder()).save(result.filePath,request);return {cancelled:false,savedPath:result.filePath};
   });
+  handle(PHOTO_MAP_CHANNELS.importMapData,async()=>{
+    const selection=await dialog.showOpenDialog(window,{properties:['openFile','multiSelections'],filters:[{name:'地图数据',extensions:['geojson','json']}]});
+    if(selection.canceled)return {cancelled:true,accepted:[],rejected:[],status:await mapData.getStatus()};
+    const imported=await mapData.importFiles(selection.filePaths);
+    
+    return {cancelled:false,...imported};
+  });
+  handle(PHOTO_MAP_CHANNELS.openMapDownload,async()=>{await shell.openExternal(manifest.sourceUrl);return {opened:true};});
 
   await window.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 });
