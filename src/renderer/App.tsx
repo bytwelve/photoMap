@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { LibrarySnapshot, WindowAction, MapDataStatus } from '../shared/contracts';
+import type { LibrarySnapshot, WindowAction, ScanLocationDecision, MapDataStatus } from '../shared/contracts';
 import { PROVINCES, CITIES } from '../shared/administrative-regions';
 import { errorMessage, regionNamesFromOptions, toLibraryState, unwrapResult } from './bridge';
 import { PHOTO_MAP_ASSETS, DEFAULT_APP_SETTINGS } from '../shared/contracts';
@@ -37,6 +37,7 @@ export function App(): React.JSX.Element {
   const [exportOpen, setExportOpen] = useState(false);
   const [mapData, setMapData] = useState<MapDataStatus>();
   const [mapBusy, setMapBusy] = useState(false);
+  const [dismissedRun, setDismissedRun] = useState<string>();
 
   async function execute(work: () => Promise<void>): Promise<void> {
     setBusy(true);
@@ -167,8 +168,24 @@ export function App(): React.JSX.Element {
       setMapData(result.status);
       if (result.status.ready) await loadMaps();
       if (result.rejected.length) setFeedback(`有 ${result.rejected.length} 份地图未通过校验`);
+      if (result.status.ready && result.accepted.length > 0 && raw?.source) {
+        setRaw(unwrapResult(await window.photoMap.refreshLibrary()).library);
+      }
     } catch (error) { setFeedback(errorMessage(error)); }
     finally { setMapBusy(false); }
+  }
+
+  const scan = raw?.scan;
+  const metadataPrompt = scan?.metadata && scan.runId && scan.runId !== dismissedRun && (scan.status === 'succeeded' || scan.status === 'partial') && scan.metadata.examined > 0 ? scan : undefined;
+
+  async function resolveMetadata(decision: ScanLocationDecision): Promise<void> {
+    if (!metadataPrompt?.runId) return;
+    await execute(async () => {
+      const result = unwrapResult(await window.photoMap.resolveScanLocations({ runId: metadataPrompt.runId!, decision }));
+      setRaw(result.library);
+      setDismissedRun(metadataPrompt.runId!);
+      setFeedback(decision === 'ignore' ? '已保留现有标注' : `已处理 ${result.succeeded} 项扫描信息`);
+    });
   }
 
   async function chooseSource(): Promise<void> {
@@ -217,6 +234,7 @@ photos.length === 0 ? <div className="empty-library">没有符合条件的照片
     </div>}
     <footer className="app-status"><span>{photos.length} 项照片</span><span>扫描：{raw?.scan.status ?? 'idle'} · 已发现 {raw?.scan.counts.discovered ?? 0} 项 · 异常 {raw?.scan.counts.errors ?? 0} 项</span><span>完全离线 · {version}</span></footer>
     {exportOpen && snapshot && <ExportDialog snapshot={snapshot} viewportSize={{ width: 1200, height: 720 }} onClose={() => setExportOpen(false)} onSaved={setFeedback} />}
+    {metadataPrompt && <div className="dialog-overlay"><section className="simple-dialog" role="dialog" aria-modal="true"><h2>确认扫描到的照片信息</h2><p>发现 {metadataPrompt.metadata?.gpsCount} 张含 GPS 的照片，{metadataPrompt.metadata?.resolvedLocationCount} 张可定位，{metadataPrompt.metadata?.captureTimeCount} 张含拍摄时间。</p><footer><button disabled={busy} onClick={() => void resolveMetadata('fill-unlabeled-only')}>仅补充未标记信息</button><button disabled={busy} onClick={() => void resolveMetadata('overwrite-all-resolved')}>使用扫描信息覆盖</button><button disabled={busy} onClick={() => void resolveMetadata('ignore')}>保留现有信息</button></footer></section></div>}
     {feedback && <div className="feedback-message" role="status">{feedback}</div>}
   </div>;
 }

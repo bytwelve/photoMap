@@ -8,7 +8,7 @@ import {
   validateAdministrativeLocation,
 } from '../../../shared/administrative-regions';
 import { PhotoMapError } from '../../../shared/errors';
-interface GpsCoordinates {latitude:number;longitude:number;mapDatum?:string;}
+import type { GpsCoordinates } from '../library-scan/exif-gps-reader';
 import {
   CITY_MAP_DATA_CONTRACT,
   PROVINCE_MAP_DATA_CONTRACT,

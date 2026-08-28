@@ -10,7 +10,7 @@ import type { AppSettings,WindowAction } from '../shared/contracts';
 import { parseAppSettings } from '../shared/settings';
 import { PhotoMapError } from '../shared/errors';
 import { PhotoLibrary } from './library';
-import { parseUpdateLocationsRequest,parseUpdateTypesRequest,parseCreateTypeRequest,parseTrashPhotosRequest,parseSaveExportRequest } from '../shared/schemas';
+import { parseUpdateLocationsRequest,parseUpdateTypesRequest,parseCreateTypeRequest,parseTrashPhotosRequest,parseSaveExportRequest,parseResolveScanLocationsRequest } from '../shared/schemas';
 import { AtomicExportService } from './services/export/atomic-export';
 import { ElectronExportEncoder } from './services/export/electron-export-encoder';
 import { shell } from 'electron';
@@ -34,7 +34,7 @@ app.whenReady().then(async()=>{
     } catch(error) {return {ok:false,error:{code:error instanceof PhotoMapError ? error.code : 'UNKNOWN_ERROR',userMessage:error instanceof Error ? error.message : '操作失败。',scope:'task',retryability:'retry'}};}
   });
   const regions=new RegionCatalog(),mapData=new MapDataService(paths.mapDataDirectory,regions);await mapData.initialize();
-  const library = new PhotoLibrary(paths,progress=>{if(!window.isDestroyed())window.webContents.send(PHOTO_MAP_CHANNELS.scanProgress,progress);});
+  const library = new PhotoLibrary(paths,progress=>{if(!window.isDestroyed())window.webContents.send(PHOTO_MAP_CHANNELS.scanProgress,progress);},regions);
   protocol.handle('photomap-media',async(request)=>{
     const url=new URL(request.url);if(url.hostname!=='photo')return new Response(null,{status:404});
     const filePath=library.mediaPath(decodeURIComponent(url.pathname.slice(1)),url.searchParams.get('size')==='thumb',url.searchParams.get('content')==='motion');
@@ -69,10 +69,11 @@ app.whenReady().then(async()=>{
     const selection=await dialog.showOpenDialog(window,{properties:['openFile','multiSelections'],filters:[{name:'地图数据',extensions:['geojson','json']}]});
     if(selection.canceled)return {cancelled:true,accepted:[],rejected:[],status:await mapData.getStatus()};
     const imported=await mapData.importFiles(selection.filePaths);
-    
+    if(imported.status.ready && library.getSource())await library.scan();
     return {cancelled:false,...imported};
   });
   handle(PHOTO_MAP_CHANNELS.openMapDownload,async()=>{await shell.openExternal(manifest.sourceUrl);return {opened:true};});
+  handle(PHOTO_MAP_CHANNELS.resolveScanLocations,value=>library.resolveLocations(parseResolveScanLocationsRequest(value)));
 
   await window.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 });

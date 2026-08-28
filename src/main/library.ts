@@ -4,10 +4,13 @@ import { randomUUID } from 'node:crypto';
 import { readdir, stat, realpath, mkdir, writeFile, } from 'node:fs/promises';
 import path from 'node:path';
 import type { PhotoMapPaths } from './bootstrap/app-paths';
-import type { BulkUpdateResult, LibrarySnapshot, PhotoSummary, PhotoType, ScanProgress, UpdateLocationsRequest, UpdateTypesRequest, TrashItemResult } from '../shared/contracts';
+import type { BulkUpdateResult, LibrarySnapshot, PhotoSummary, PhotoType, ScanProgress, UpdateLocationsRequest, UpdateTypesRequest, ResolveScanLocationsRequest, LocationAssignment, TrashItemResult } from '../shared/contracts';
 import { photoMediaUrl, photoThumbnailUrl } from '../shared/media-url';
 import { PhotoMapError } from '../shared/errors';
 import { validateAdministrativeLocation } from '../shared/administrative-regions';
+import { readExifGps } from './services/library-scan/exif-gps-reader';
+import type { RegionCatalog } from './services/regions/region-catalog';
+import { isImageFormat } from '../shared/contracts';
 
 type Row = Record<string, unknown>;
 export class PhotoLibrary {
@@ -15,8 +18,8 @@ export class PhotoLibrary {
   private cancelled = false;
   private scanning = false;
   private progress: ScanProgress = { runId: null, sourceId: null, status: 'idle', counts: { discovered: 0, indexed: 0, unchanged: 0, errors: 0 } };
-  
-  constructor(private readonly paths: PhotoMapPaths, private readonly publish: (progress: ScanProgress) => void) {
+  private readonly proposals = new Map<string, LocationAssignment>();
+  constructor(private readonly paths: PhotoMapPaths, private readonly publish: (progress: ScanProgress) => void, private readonly regions: RegionCatalog) {
     this.database = new DatabaseSync(paths.databasePath);
     this.database.exec('PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL;');
     const version = Number((this.database.prepare('PRAGMA user_version').get() as Row).user_version);
@@ -152,8 +155,8 @@ PRAGMA user_version = 2; COMMIT;`);
     if (!source) throw new PhotoMapError('SOURCE_NOT_FOUND', '请先选择照片文件夹。');
     this.scanning = true; this.cancelled = false;
     const sourceId = String(source.source_id), rootPath = String(source.root_path), runId = randomUUID();
-    this.progress = { runId, sourceId, status: 'running', counts: { discovered: 0, indexed: 0, unchanged: 0, errors: 0 } };
-    
+    this.progress = { runId, sourceId, status: 'running', counts: { discovered: 0, indexed: 0, unchanged: 0, errors: 0 }, metadata:{examined:0,exifCount:0,gpsCount:0,resolvedLocationCount:0,captureTimeCount:0,metadataErrorCount:0} };
+    this.proposals.clear();
     this.database.prepare("INSERT INTO scan_run(run_id,source_id,status,discovered_count,indexed_count,unchanged_count,error_count,started_at) VALUES(?,?,'running',0,0,0,0,?)").run(runId,sourceId,new Date().toISOString());
     this.publish(this.progress);
     const walk = async (directory: string): Promise<void> => {
@@ -192,7 +195,16 @@ PRAGMA user_version = 2; COMMIT;`);
             this.revision();
           }
           
-          
+          if (this.regions.isAvailable()) {
+            const metadataFormat = extension === 'jpeg' ? 'jpg' : extension;
+            if (isImageFormat(metadataFormat as PhotoSummary['mediaFormat'])) {
+              const metadata = await readExifGps(absolutePath,metadataFormat as 'jpg'|'png'|'heic'|'avif');
+              const counts = this.progress.metadata!;counts.examined++;
+              if (metadata.hasExif) counts.exifCount++;
+              if (metadata.metadataError) counts.metadataErrorCount++;
+              if (metadata.gps) {counts.gpsCount++;const location=this.regions.resolveGps(metadata.gps);if (location) {this.proposals.set(photoId,location);counts.resolvedLocationCount++;}}
+            }
+          }
         } catch {
           this.progress.counts.errors++;
         }
@@ -267,6 +279,20 @@ PRAGMA user_version = 2; COMMIT;`);
       } catch { items.push({photoId,status:'failed'}); }
     }
     this.revision();return {items,library:this.snapshot()};
+  }
+
+  resolveLocations(request: ResolveScanLocationsRequest) {
+    if (request.runId !== this.progress.runId || this.scanning) throw new PhotoMapError('INVALID_REQUEST','本次扫描的地点建议已失效。');
+    let succeeded = 0,skipped = 0;
+    if (request.decision !== 'ignore') {
+      for (const [photoId,location] of this.proposals) {
+        const existing = this.database.prepare('SELECT photo_id FROM photo_place WHERE photo_id = ?').get(photoId);
+        if (existing && request.decision === 'fill-unlabeled-only') { skipped++;continue; }
+        succeeded += this.updateLocations({photoIds:[photoId],location}).succeeded;
+      }
+    }
+    this.proposals.clear();
+    return {applied:request.decision !== 'ignore',decision:request.decision,succeeded,skipped,failed:0,locations:{succeeded,skipped,failed:0},captureTimes:{succeeded:0,skipped:0,failed:0},library:this.snapshot()};
   }
 
 }

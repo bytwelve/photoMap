@@ -23,6 +23,7 @@
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
     "electron-squirrel-startup": "1.0.1",
+    "exifreader": "4.44.0",
     "react": "19.2.7",
     "react-dom": "19.2.7"
   },
