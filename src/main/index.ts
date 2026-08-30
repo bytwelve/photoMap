@@ -10,7 +10,7 @@ import type { AppSettings,WindowAction } from '../shared/contracts';
 import { parseAppSettings } from '../shared/settings';
 import { PhotoMapError } from '../shared/errors';
 import { PhotoLibrary } from './library';
-import { parseUpdateLocationsRequest,parseUpdateTypesRequest,parseCreateTypeRequest,parseTrashPhotosRequest,parseSaveExportRequest,parseResolveScanLocationsRequest } from '../shared/schemas';
+import { parseUpdateLocationsRequest,parseUpdateTypesRequest,parseCreateTypeRequest,parseTrashPhotosRequest,parseSaveExportRequest,parseResolveScanLocationsRequest,parseUpdateNoteRequest } from '../shared/schemas';
 import { AtomicExportService } from './services/export/atomic-export';
 import { ElectronExportEncoder } from './services/export/electron-export-encoder';
 import { shell } from 'electron';
@@ -74,6 +74,7 @@ app.whenReady().then(async()=>{
   });
   handle(PHOTO_MAP_CHANNELS.openMapDownload,async()=>{await shell.openExternal(manifest.sourceUrl);return {opened:true};});
   handle(PHOTO_MAP_CHANNELS.resolveScanLocations,value=>library.resolveLocations(parseResolveScanLocationsRequest(value)));
+  handle(PHOTO_MAP_CHANNELS.updateNote,value=>{const request=parseUpdateNoteRequest(value);return library.updateNote(request.photoId,request.note);});
 
   await window.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 });

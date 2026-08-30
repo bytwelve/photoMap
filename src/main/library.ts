@@ -108,7 +108,8 @@ PRAGMA user_version = 2; COMMIT;`);
       const now = new Date().toISOString();
       this.database.prepare('INSERT INTO photo_type(type_id,name,normalized_name,is_builtin,created_at,updated_at) VALUES(?,?,?,1,?,?),(?,?,?,1,?,?)').run('builtin-portrait','人像','人像',now,now,'builtin-landscape','风景','风景',now,now);
     }
-    
+    if (version < 3) this.database.exec("ALTER TABLE photo ADD COLUMN note TEXT NOT NULL DEFAULT '' CHECK (length(note) <= 60); PRAGMA user_version = 3;");
+
   }
   close(): void { this.cancelled = true; this.database.close(); }
   getSource(): Row | undefined { return this.database.prepare('SELECT * FROM library_source WHERE is_active = 1').get() as Row | undefined; }
@@ -120,7 +121,7 @@ PRAGMA user_version = 2; COMMIT;`);
       photos: rows.map((row): PhotoSummary => {
         const photoId = String(row.photo_id);
         const place = this.database.prepare('SELECT * FROM photo_place WHERE photo_id = ?').get(photoId) as Row | undefined;
-        return { photoId, fileName: path.basename(String(row.display_path)), folderPath: path.dirname(String(row.relative_path)), mediaUrl: photoMediaUrl(photoId), thumbnailUrl: photoThumbnailUrl(photoId), fileCreatedAtMs: row.file_created_at_ms === null ? null : Number(row.file_created_at_ms), captureTime: null, mediaKind: 'photo', mediaFormat: row.image_format as PhotoSummary['mediaFormat'], pixelWidth: row.pixel_width === null ? null : Number(row.pixel_width), pixelHeight: row.pixel_height === null ? null : Number(row.pixel_height), decodeState: row.decode_state as PhotoSummary['decodeState'], lifecycleState: row.lifecycle_state as PhotoSummary['lifecycleState'], location: place ? {provinceGb:String(place.province_gb),...(place.city_gb ? {cityGb:String(place.city_gb)} : {})} : null, typeIds: (this.database.prepare('SELECT type_id FROM photo_type_link WHERE photo_id = ?').all(photoId) as Row[]).map(link=>String(link.type_id)), note: '' };
+        return { photoId, fileName: path.basename(String(row.display_path)), folderPath: path.dirname(String(row.relative_path)), mediaUrl: photoMediaUrl(photoId), thumbnailUrl: photoThumbnailUrl(photoId), fileCreatedAtMs: row.file_created_at_ms === null ? null : Number(row.file_created_at_ms), captureTime: null, mediaKind: 'photo', mediaFormat: row.image_format as PhotoSummary['mediaFormat'], pixelWidth: row.pixel_width === null ? null : Number(row.pixel_width), pixelHeight: row.pixel_height === null ? null : Number(row.pixel_height), decodeState: row.decode_state as PhotoSummary['decodeState'], lifecycleState: row.lifecycle_state as PhotoSummary['lifecycleState'], location: place ? {provinceGb:String(place.province_gb),...(place.city_gb ? {cityGb:String(place.city_gb)} : {})} : null, typeIds: (this.database.prepare('SELECT type_id FROM photo_type_link WHERE photo_id = ?').all(photoId) as Row[]).map(link=>String(link.type_id)), note: String(row.note ?? '') };
       }),
       photoTypes: (this.database.prepare('SELECT * FROM photo_type ORDER BY name').all() as Row[]).map(row=>({typeId:String(row.type_id),name:String(row.name),isBuiltin:Boolean(row.is_builtin)})),
       scan: this.progress,
@@ -294,5 +295,7 @@ PRAGMA user_version = 2; COMMIT;`);
     this.proposals.clear();
     return {applied:request.decision !== 'ignore',decision:request.decision,succeeded,skipped,failed:0,locations:{succeeded,skipped,failed:0},captureTimes:{succeeded:0,skipped:0,failed:0},library:this.snapshot()};
   }
+
+  updateNote(photoId: string,note: string): BulkUpdateResult { if (note.length > 60) throw new PhotoMapError('INVALID_REQUEST','备注不能超过60字。'); return this.updateRows([photoId],id=>{this.database.prepare('UPDATE photo SET note = ? WHERE photo_id = ?').run(note,id);}); }
 
 }

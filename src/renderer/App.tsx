@@ -38,6 +38,8 @@ export function App(): React.JSX.Element {
   const [mapData, setMapData] = useState<MapDataStatus>();
   const [mapBusy, setMapBusy] = useState(false);
   const [dismissedRun, setDismissedRun] = useState<string>();
+  const [note, setNote] = useState('');
+  const [autoPlay, setAutoPlay] = useState(false);
 
   async function execute(work: () => Promise<void>): Promise<void> {
     setBusy(true);
@@ -188,6 +190,21 @@ export function App(): React.JSX.Element {
     });
   }
 
+  useEffect(() => { setNote(active?.note ?? ''); }, [active?.id, active?.note]);
+  useEffect(() => {
+    if (!autoPlay || mode !== 'memory' || !active) return;
+    const timer = window.setTimeout(() => {
+      if (next) setActiveId(next.id);
+      else { setAutoPlay(false); }
+    }, 4000);
+    return () => window.clearTimeout(timer);
+  }, [autoPlay, mode, active?.id, next?.id]);
+
+  async function saveNote(): Promise<void> {
+    if (!active) return;
+    await execute(async () => { setRaw(unwrapResult(await window.photoMap.updateNote({ photoId: active.id, note })).library); setFeedback('备注已保存'); });
+  }
+
   async function chooseSource(): Promise<void> {
     await execute(async () => {
       const result = unwrapResult(await window.photoMap.chooseLibrary());
@@ -203,7 +220,7 @@ export function App(): React.JSX.Element {
 
   return <div className="desktop-app" data-testid="app-shell">
     <header className="app-header"><h1>用照片拼地图</h1>
-      <nav><button className={mode === 'wall' ? 'active' : ''} onClick={() => setMode('wall')}>照片墙</button><button className={mode === 'memory' ? 'active' : ''} onClick={() => setMode('memory')}>堆叠回忆</button><button className={mode === 'batch' ? 'active' : ''} onClick={() => setMode('batch')}>批量整理</button></nav>
+      <nav><button className={mode === 'wall' ? 'active' : ''} onClick={() => setMode('wall')}>照片墙</button><button className={mode === 'memory' ? 'active' : ''} onClick={() => setMode('memory')}>明信片批注</button><button className={mode === 'batch' ? 'active' : ''} onClick={() => setMode('batch')}>批量整理</button></nav>
       <button onClick={() => windowAction('minimize')}>最小化</button><button onClick={() => windowAction('toggleMaximize')}>最大化</button><button onClick={() => windowAction('close')}>关闭</button>
     </header>
     <div className="source-toolbar"><strong>{library?.sourceName ?? '尚未选择照片文件夹'}</strong><button disabled={busy} onClick={() => void chooseSource()}>选择照片文件夹</button><button disabled={busy || !raw?.source} onClick={() => void refresh()}>重新扫描</button>
@@ -224,11 +241,11 @@ export function App(): React.JSX.Element {
         <button disabled={busy || !selected.size || !typeId} onClick={() => void updateTypes(false)}>添加类型</button><button disabled={busy || !selected.size || !typeId} onClick={() => void updateTypes(true)}>移除类型</button>
         <input aria-label="新类型" placeholder="创建自定义类型" value={newType} onChange={(event) => setNewType(event.target.value)} /><button disabled={busy || !newType.trim()} onClick={() => void createType()}>创建类型</button>
         <button disabled={busy || !selected.size} onClick={() => void trashSelection()}>移入回收站</button>
-        {selectedRegion && <><h2>{selectedRegion.name}</h2><button onClick={() => { setLocationFilter(selectedRegion.code); setMode('batch'); }}>整理该区域照片</button><button disabled={!selected.size} onClick={fixSelectedPhotos}>固定已选照片</button><button onClick={() => setFixedPhotos((current) => { const value = new Map(current); value.delete(`${selectedRegion.level}:${selectedRegion.code}`); return value; })}>恢复自动选片</button></>}
+        {selectedRegion && <><h2>{selectedRegion.name}</h2><button onClick={() => { setLocationFilter(selectedRegion.code); setMode('batch'); }}>整理该区域照片</button><button disabled={!selected.size} onClick={fixSelectedPhotos}>固定已选照片</button><button onClick={() => setFixedPhotos((current) => { const value = new Map(current); value.delete(`${selectedRegion.level}:${selectedRegion.code}`); return value; })}>恢复自动选片</button><button onClick={() => { setLocationFilter(selectedRegion.code); setMode('memory'); }}>翻阅该区域明信片</button></>}
       </aside>
       <section className="library-content">
         {mode === 'wall' ? <PhotoWall provinces={provinces} cities={cities} mapError={mapError} photos={allPhotos} fixedPhotoSelections={fixedPhotos} selectedRegion={selectedRegion} mapPreference={mapPreference} onMapPreferenceChange={setMapPreference} onSelectedRegionChange={setSelectedRegion} onSnapshotChange={setSnapshot} /> :
-        mode === 'memory' ? active ? <section className="memory-workspace"><div className="memory-deck"><div className="memory-paper back-two" /><div className="memory-paper back-one" /><figure className="memory-paper front">{active.decodeState === 'valid' ? <img src={active.mediaUrl} alt={active.name} /> : <div className="photo-problem">{active.decodeMessage}</div>}<figcaption>{active.name} · {active.location?.cityName ?? active.location?.provinceName ?? '未标记地点'}</figcaption></figure></div><div className="memory-controls"><button disabled={!previous} onClick={() => navigate(-1)}>上一张</button><span>{activeIndex + 1} / {photos.length}</span><button disabled={!next} onClick={() => navigate(1)}>{'下一张'}</button><button onClick={() => setSelected(new Set([active.id]))}>标注此照片</button></div><div className="memory-thumbnails">{photos.map((photo) => <button key={photo.id} className={photo.id === active.id ? 'active' : ''} onClick={() => setActiveId(photo.id)}><img src={photo.thumbnailUrl} alt={photo.name} /></button>)}</div></section> : <div className="empty-library">没有符合筛选的照片</div> :
+        mode === 'memory' ? active ? <section className="memory-workspace postcard-workspace"><div className="memory-deck"><div className="memory-paper back-two" /><div className="memory-paper back-one" /><figure className="memory-paper front">{active.decodeState === 'valid' ? <img src={active.mediaUrl} alt={active.name} /> : <div className="photo-problem">{active.decodeMessage}</div>}<figcaption>{active.name} · {active.location?.cityName ?? active.location?.provinceName ?? '未标记地点'}</figcaption></figure></div><div className="memory-controls"><button disabled={!previous} onClick={() => navigate(-1)}>上一张</button><span>{activeIndex + 1} / {photos.length}</span><button disabled={!next} onClick={() => navigate(1)}>{'下一张'}</button><button onClick={() => setSelected(new Set([active.id]))}>标注此照片</button><button onClick={() => setAutoPlay((current) => !current)}>{autoPlay ? '暂停翻阅' : '自动翻阅'}</button></div><div className="memory-note"><input aria-label="明信片备注" maxLength={60} value={note} placeholder="为这一刻写下一句话" onChange={(event) => setNote(event.target.value)} /><button disabled={busy} onClick={() => void saveNote()}>保存备注</button></div><div className="memory-thumbnails">{photos.map((photo) => <button key={photo.id} className={photo.id === active.id ? 'active' : ''} onClick={() => setActiveId(photo.id)}><img src={photo.thumbnailUrl} alt={photo.name} /></button>)}</div></section> : <div className="empty-library">没有符合筛选的照片</div> :
 photos.length === 0 ? <div className="empty-library">没有符合条件的照片</div> : <div className="photo-grid">{photos.map((photo) => <article key={photo.id} className={selected.has(photo.id) ? 'photo-tile selected' : 'photo-tile'}><label><input type="checkbox" aria-label={`选择 ${photo.name}`} checked={selected.has(photo.id)} onChange={() => togglePhoto(photo.id)} />选择</label>{photo.decodeState === 'valid' ? <img src={photo.thumbnailUrl} alt={photo.name} loading="lazy" onDoubleClick={() => { setActiveId(photo.id); setMode('memory'); }} /> : <div className="photo-problem">{photo.decodeMessage}</div>}<footer>{photo.name}<br />{photo.location?.cityName ?? photo.location?.provinceName ?? '未标记地点'} · {photo.types.map((tag) => tag.name).join('、')}</footer></article>)}</div>}
       </section>
     </div>}
