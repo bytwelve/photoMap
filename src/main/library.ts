@@ -109,6 +109,21 @@ PRAGMA user_version = 2; COMMIT;`);
       this.database.prepare('INSERT INTO photo_type(type_id,name,normalized_name,is_builtin,created_at,updated_at) VALUES(?,?,?,1,?,?),(?,?,?,1,?,?)').run('builtin-portrait','人像','人像',now,now,'builtin-landscape','风景','风景',now,now);
     }
     if (version < 3) this.database.exec("ALTER TABLE photo ADD COLUMN note TEXT NOT NULL DEFAULT '' CHECK (length(note) <= 60); PRAGMA user_version = 3;");
+if (version < 4) this.database.exec(`ALTER TABLE photo ADD COLUMN media_kind TEXT NOT NULL DEFAULT 'photo'; ALTER TABLE photo ADD COLUMN media_format TEXT NOT NULL DEFAULT 'jpg'; UPDATE photo SET media_format = image_format;
+        CREATE TABLE photo_companion (
+          photo_id TEXT PRIMARY KEY REFERENCES photo(photo_id) ON DELETE CASCADE,
+          display_path TEXT NOT NULL,
+          relative_path TEXT NOT NULL,
+          canonical_path_key TEXT NOT NULL,
+          file_size INTEGER NOT NULL,
+          modified_at_ms REAL NOT NULL,
+          file_created_at_ms REAL,
+          content_sha256 TEXT,
+          media_format TEXT NOT NULL CHECK (media_format IN ('mp4', 'mov', 'm4v')),
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+PRAGMA user_version = 4;`);
 
   }
   close(): void { this.cancelled = true; this.database.close(); }
@@ -121,7 +136,7 @@ PRAGMA user_version = 2; COMMIT;`);
       photos: rows.map((row): PhotoSummary => {
         const photoId = String(row.photo_id);
         const place = this.database.prepare('SELECT * FROM photo_place WHERE photo_id = ?').get(photoId) as Row | undefined;
-        return { photoId, fileName: path.basename(String(row.display_path)), folderPath: path.dirname(String(row.relative_path)), mediaUrl: photoMediaUrl(photoId), thumbnailUrl: photoThumbnailUrl(photoId), fileCreatedAtMs: row.file_created_at_ms === null ? null : Number(row.file_created_at_ms), captureTime: null, mediaKind: 'photo', mediaFormat: row.image_format as PhotoSummary['mediaFormat'], pixelWidth: row.pixel_width === null ? null : Number(row.pixel_width), pixelHeight: row.pixel_height === null ? null : Number(row.pixel_height), decodeState: row.decode_state as PhotoSummary['decodeState'], lifecycleState: row.lifecycle_state as PhotoSummary['lifecycleState'], location: place ? {provinceGb:String(place.province_gb),...(place.city_gb ? {cityGb:String(place.city_gb)} : {})} : null, typeIds: (this.database.prepare('SELECT type_id FROM photo_type_link WHERE photo_id = ?').all(photoId) as Row[]).map(link=>String(link.type_id)), note: String(row.note ?? '') };
+        return { photoId, fileName: path.basename(String(row.display_path)), folderPath: path.dirname(String(row.relative_path)), mediaUrl: photoMediaUrl(photoId), thumbnailUrl: photoThumbnailUrl(photoId), fileCreatedAtMs: row.file_created_at_ms === null ? null : Number(row.file_created_at_ms), captureTime: null, mediaKind: row.media_kind as PhotoSummary['mediaKind'], mediaFormat: row.media_format as PhotoSummary['mediaFormat'], pixelWidth: row.pixel_width === null ? null : Number(row.pixel_width), pixelHeight: row.pixel_height === null ? null : Number(row.pixel_height), decodeState: row.decode_state as PhotoSummary['decodeState'], lifecycleState: row.lifecycle_state as PhotoSummary['lifecycleState'], location: place ? {provinceGb:String(place.province_gb),...(place.city_gb ? {cityGb:String(place.city_gb)} : {})} : null, typeIds: (this.database.prepare('SELECT type_id FROM photo_type_link WHERE photo_id = ?').all(photoId) as Row[]).map(link=>String(link.type_id)), note: String(row.note ?? '') };
       }),
       photoTypes: (this.database.prepare('SELECT * FROM photo_type ORDER BY name').all() as Row[]).map(row=>({typeId:String(row.type_id),name:String(row.name),isBuiltin:Boolean(row.is_builtin)})),
       scan: this.progress,
@@ -168,8 +183,12 @@ PRAGMA user_version = 2; COMMIT;`);
         if (item.isSymbolicLink()) continue;
         if (item.isDirectory()) { try { await walk(absolutePath); } catch { this.progress.counts.errors++; } continue; }
         const extension = path.extname(item.name).slice(1).toLowerCase();
-        if (!item.isFile() || !['jpg','jpeg','png'].includes(extension)) continue;
-        
+        if (!item.isFile() || !['jpg','jpeg','png','heic','avif','mp4','mov','m4v'].includes(extension)) continue;
+        const stem = path.basename(item.name,path.extname(item.name)).toLowerCase();
+        const sibling = items.find(candidate=>candidate.isFile() && path.basename(candidate.name,path.extname(candidate.name)).toLowerCase() === stem && ['.jpg','.jpeg','.heic'].includes(path.extname(candidate.name).toLowerCase()));
+        if (['mp4','mov','m4v'].includes(extension) && sibling) continue;
+        const companion = items.find(candidate=>candidate.isFile() && path.basename(candidate.name,path.extname(candidate.name)).toLowerCase() === stem && ['.mp4','.mov','.m4v'].includes(path.extname(candidate.name).toLowerCase()));
+        const mediaKind = ['mp4','mov','m4v'].includes(extension) ? 'video' : companion ? 'live' : 'photo';
         this.progress.counts.discovered++;
         this.progress.currentFileName = item.name;
         try {
@@ -183,7 +202,7 @@ PRAGMA user_version = 2; COMMIT;`);
           } else {
             let image = nativeImage.createEmpty();
             try {
-              image = nativeImage.createFromPath(absolutePath);
+              image = ['mp4','mov','m4v'].includes(extension) ? await nativeImage.createThumbnailFromPath(absolutePath,{width:512,height:512}) : nativeImage.createFromPath(absolutePath);
               if (image.isEmpty()) image = await nativeImage.createThumbnailFromPath(absolutePath,{ width: 512,height: 512 });
             } catch { /* Retain an indexed error entry when decoding fails. */ }
             const size = image.getSize(), decode = image.isEmpty() ? 'corrupt' : 'valid';
@@ -195,7 +214,11 @@ PRAGMA user_version = 2; COMMIT;`);
             this.progress.counts.indexed++;
             this.revision();
           }
-          
+          this.database.prepare('UPDATE photo SET media_kind = ?,media_format = ? WHERE photo_id = ?').run(mediaKind,extension === 'jpeg' ? 'jpg' : extension,photoId);
+          if (mediaKind === 'live' && companion) {
+            const companionPath=path.join(directory,companion.name),companionFacts=await stat(companionPath),now=new Date().toISOString();
+            this.database.prepare('INSERT OR REPLACE INTO photo_companion(photo_id,display_path,relative_path,canonical_path_key,file_size,modified_at_ms,file_created_at_ms,content_sha256,media_format,created_at,updated_at) VALUES(?,?,?,?,?,?,?,NULL,?,?,?)').run(photoId,companionPath,path.relative(rootPath,companionPath),process.platform === 'win32' ? companionPath.toLowerCase() : companionPath,companionFacts.size,companionFacts.mtimeMs,companionFacts.birthtimeMs,path.extname(companion.name).slice(1).toLowerCase(),now,now);
+          } else this.database.prepare('DELETE FROM photo_companion WHERE photo_id = ?').run(photoId);
           if (this.regions.isAvailable()) {
             const metadataFormat = extension === 'jpeg' ? 'jpg' : extension;
             if (isImageFormat(metadataFormat as PhotoSummary['mediaFormat'])) {
@@ -230,7 +253,7 @@ PRAGMA user_version = 2; COMMIT;`);
   mediaPath(photoId: string,thumbnail: boolean,playback: boolean): string | undefined {
     const row = this.database.prepare("SELECT * FROM photo WHERE photo_id = ? AND lifecycle_state = 'active'").get(photoId) as Row | undefined;
     if (!row) return undefined;
-    void playback;
+    if (playback && row.media_kind === 'live') {const companion=this.database.prepare('SELECT display_path FROM photo_companion WHERE photo_id = ?').get(photoId) as Row | undefined;return companion ? String(companion.display_path) : undefined;}
     return thumbnail ? path.join(this.paths.thumbnailRoot,photoId+'.png') : String(row.display_path);
   }
   
@@ -273,7 +296,7 @@ PRAGMA user_version = 2; COMMIT;`);
       const row = this.database.prepare("SELECT * FROM photo WHERE photo_id = ? AND lifecycle_state = 'active'").get(photoId) as Row | undefined;
       if (!row) { items.push({photoId,status:'not_found'});continue; }
       try {
-        
+        const companion = this.database.prepare('SELECT display_path FROM photo_companion WHERE photo_id = ?').get(photoId) as Row | undefined; if (companion) await shell.trashItem(String(companion.display_path));
         await shell.trashItem(String(row.display_path));
         this.database.prepare("UPDATE photo SET lifecycle_state = 'trashed' WHERE photo_id = ?").run(photoId);
         items.push({photoId,status:'moved'});

@@ -9,6 +9,7 @@ import { PhotoWall } from './features/photo-wall/PhotoWall';
 import { loadRegionCollection } from './map-scene/scene';
 import { ExportDialog } from './features/export/ExportDialog';
 import { MapDataSetup } from './components/MapDataSetup';
+import { PostcardPlayableMedia } from './features/postcard/PostcardMedia';
 
 const names = regionNamesFromOptions(PROVINCES, CITIES);
 
@@ -40,6 +41,7 @@ export function App(): React.JSX.Element {
   const [dismissedRun, setDismissedRun] = useState<string>();
   const [note, setNote] = useState('');
   const [autoPlay, setAutoPlay] = useState(false);
+  const [mediaFilter, setMediaFilter] = useState('all');
 
   async function execute(work: () => Promise<void>): Promise<void> {
     setBusy(true);
@@ -75,12 +77,13 @@ export function App(): React.JSX.Element {
     const locationMatch = !locationFilter || (locationFilter === 'unlocated' ? !photo.location : photo.location?.provinceCode === locationFilter || photo.location?.cityCode === locationFilter);
     return locationMatch && (!typeFilter || photo.types.some((tag) => tag.id === typeFilter))
       && (!query || [photo.name, photo.location?.provinceName, photo.location?.cityName, ...photo.types.map((tag) => tag.name)].some((value) => value?.includes(query)))
+      && (mediaFilter === 'all' || photo.mediaKind === mediaFilter)
       ;
   });
   useEffect(() => {
     const visible = new Set(photos.map((photo) => photo.id));
     setSelected((current) => new Set([...current].filter((id) => visible.has(id))));
-  }, [raw, query, locationFilter, typeFilter]);
+  }, [raw, query, locationFilter, typeFilter, mediaFilter]);
 
   function togglePhoto(id: string): void {
     setSelected((current) => {
@@ -233,6 +236,7 @@ export function App(): React.JSX.Element {
         <h2>组合筛选</h2><input aria-label="搜索照片" value={query} placeholder="照片名、地点、类型" onChange={(event) => setQuery(event.target.value)} />
         <select aria-label="地点筛选" value={locationFilter} onChange={(event) => setLocationFilter(event.target.value)}><option value="">全部地点</option><option value="unlocated">未标记地点</option>{PROVINCES.map((region) => <option key={region.code} value={region.code}>{region.name}</option>)}{CITIES.map((region) => <option key={region.code} value={region.code}>{region.name}</option>)}</select>
         <select aria-label="类型筛选" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="">全部类型</option>{library?.photoTypes.map((tag) => <option key={tag.id} value={tag.id}>{tag.name}</option>)}</select>
+        <select aria-label="媒体类型" value={mediaFilter} onChange={(event) => setMediaFilter(event.target.value)}><option value="all">所有媒体</option><option value="photo">照片</option><option value="video">视频</option><option value="live">实况照片</option></select>
         <h2>已选择 {selected.size} 项</h2><button onClick={() => setSelected(new Set(photos.map((photo) => photo.id)))}>全选当前结果</button><button onClick={() => setSelected(new Set())}>取消选择</button>
         <select aria-label="标注省份" value={province} onChange={(event) => { setProvince(event.target.value); setCity(''); }}><option value="">清除地点</option>{PROVINCES.map((region) => <option key={region.code} value={region.code}>{region.name}</option>)}</select>
         <select aria-label="标注城市" disabled={!province} value={city} onChange={(event) => setCity(event.target.value)}><option value="">仅标记省份</option>{CITIES.filter((region) => region.parentProvinceCode === province).map((region) => <option key={region.code} value={region.code}>{region.name}</option>)}</select>
@@ -245,8 +249,8 @@ export function App(): React.JSX.Element {
       </aside>
       <section className="library-content">
         {mode === 'wall' ? <PhotoWall provinces={provinces} cities={cities} mapError={mapError} photos={allPhotos} fixedPhotoSelections={fixedPhotos} selectedRegion={selectedRegion} mapPreference={mapPreference} onMapPreferenceChange={setMapPreference} onSelectedRegionChange={setSelectedRegion} onSnapshotChange={setSnapshot} /> :
-        mode === 'memory' ? active ? <section className="memory-workspace postcard-workspace"><div className="memory-deck"><div className="memory-paper back-two" /><div className="memory-paper back-one" /><figure className="memory-paper front">{active.decodeState === 'valid' ? <img src={active.mediaUrl} alt={active.name} /> : <div className="photo-problem">{active.decodeMessage}</div>}<figcaption>{active.name} · {active.location?.cityName ?? active.location?.provinceName ?? '未标记地点'}</figcaption></figure></div><div className="memory-controls"><button disabled={!previous} onClick={() => navigate(-1)}>上一张</button><span>{activeIndex + 1} / {photos.length}</span><button disabled={!next} onClick={() => navigate(1)}>{'下一张'}</button><button onClick={() => setSelected(new Set([active.id]))}>标注此照片</button><button onClick={() => setAutoPlay((current) => !current)}>{autoPlay ? '暂停翻阅' : '自动翻阅'}</button></div><div className="memory-note"><input aria-label="明信片备注" maxLength={60} value={note} placeholder="为这一刻写下一句话" onChange={(event) => setNote(event.target.value)} /><button disabled={busy} onClick={() => void saveNote()}>保存备注</button></div><div className="memory-thumbnails">{photos.map((photo) => <button key={photo.id} className={photo.id === active.id ? 'active' : ''} onClick={() => setActiveId(photo.id)}><img src={photo.thumbnailUrl} alt={photo.name} /></button>)}</div></section> : <div className="empty-library">没有符合筛选的照片</div> :
-photos.length === 0 ? <div className="empty-library">没有符合条件的照片</div> : <div className="photo-grid">{photos.map((photo) => <article key={photo.id} className={selected.has(photo.id) ? 'photo-tile selected' : 'photo-tile'}><label><input type="checkbox" aria-label={`选择 ${photo.name}`} checked={selected.has(photo.id)} onChange={() => togglePhoto(photo.id)} />选择</label>{photo.decodeState === 'valid' ? <img src={photo.thumbnailUrl} alt={photo.name} loading="lazy" onDoubleClick={() => { setActiveId(photo.id); setMode('memory'); }} /> : <div className="photo-problem">{photo.decodeMessage}</div>}<footer>{photo.name}<br />{photo.location?.cityName ?? photo.location?.provinceName ?? '未标记地点'} · {photo.types.map((tag) => tag.name).join('、')}</footer></article>)}</div>}
+        mode === 'memory' ? active ? <section className="memory-workspace postcard-workspace"><div className="memory-deck"><div className="memory-paper back-two" /><div className="memory-paper back-one" /><figure className="memory-paper front">{active.decodeState === 'valid' ? active.mediaKind === 'video' || active.mediaKind === 'live' ? <PostcardPlayableMedia photo={active} active={true} /> : <img src={active.mediaFormat === 'heic' || active.mediaFormat === 'avif' ? active.thumbnailUrl : active.mediaUrl} alt={active.name} /> : <div className="photo-problem">{active.decodeMessage}</div>}<figcaption>{active.name} · {active.location?.cityName ?? active.location?.provinceName ?? '未标记地点'}</figcaption></figure></div><div className="memory-controls"><button disabled={!previous} onClick={() => navigate(-1)}>上一张</button><span>{activeIndex + 1} / {photos.length}</span><button disabled={!next} onClick={() => navigate(1)}>{'下一张'}</button><button onClick={() => setSelected(new Set([active.id]))}>标注此照片</button><button onClick={() => setAutoPlay((current) => !current)}>{autoPlay ? '暂停翻阅' : '自动翻阅'}</button></div><div className="memory-note"><input aria-label="明信片备注" maxLength={60} value={note} placeholder="为这一刻写下一句话" onChange={(event) => setNote(event.target.value)} /><button disabled={busy} onClick={() => void saveNote()}>保存备注</button></div><div className="memory-thumbnails">{photos.map((photo) => <button key={photo.id} className={photo.id === active.id ? 'active' : ''} onClick={() => setActiveId(photo.id)}><img src={photo.thumbnailUrl} alt={photo.name} /></button>)}</div></section> : <div className="empty-library">没有符合筛选的照片</div> :
+photos.length === 0 ? <div className="empty-library">没有符合条件的照片</div> : <div className="photo-grid">{photos.map((photo) => <article key={photo.id} className={selected.has(photo.id) ? 'photo-tile selected' : 'photo-tile'}><label><input type="checkbox" aria-label={`选择 ${photo.name}`} checked={selected.has(photo.id)} onChange={() => togglePhoto(photo.id)} />选择</label>{photo.decodeState === 'valid' ? <img src={photo.thumbnailUrl} alt={photo.name} loading="lazy" onDoubleClick={() => { setActiveId(photo.id); setMode('memory'); }} /> : <div className="photo-problem">{photo.decodeMessage}</div>}<footer>{photo.name}<br />{photo.location?.cityName ?? photo.location?.provinceName ?? '未标记地点'} · {photo.types.map((tag) => tag.name).join('、')} · {photo.mediaKind === 'video' ? '视频' : photo.mediaKind === 'live' ? '实况' : '照片'}</footer></article>)}</div>}
       </section>
     </div>}
     <footer className="app-status"><span>{photos.length} 项照片</span><span>扫描：{raw?.scan.status ?? 'idle'} · 已发现 {raw?.scan.counts.discovered ?? 0} 项 · 异常 {raw?.scan.counts.errors ?? 0} 项</span><span>完全离线 · {version}</span></footer>

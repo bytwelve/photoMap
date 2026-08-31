@@ -103,3 +103,7 @@ export function stablePhotoOrder(photos: readonly PhotoRecord[], seed: string): 
     return leftHash === rightHash ? left.id.localeCompare(right.id) : leftHash - rightHash;
   });
 }
+
+export function annotationPlaybackUrl(photo: PhotoRecord): string {
+  return photo.mediaKind === 'live' ? `${photo.mediaUrl}?content=motion` : photo.mediaUrl;
+}
