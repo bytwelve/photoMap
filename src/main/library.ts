@@ -1,16 +1,17 @@
 import { nativeImage, shell } from 'electron';
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
-import { readdir, stat, realpath, mkdir, writeFile, } from 'node:fs/promises';
+import { readdir, stat, realpath, mkdir, writeFile, access, rename } from 'node:fs/promises';
 import path from 'node:path';
 import type { PhotoMapPaths } from './bootstrap/app-paths';
-import type { BulkUpdateResult, LibrarySnapshot, PhotoSummary, PhotoType, ScanProgress, UpdateLocationsRequest, UpdateTypesRequest, ResolveScanLocationsRequest, LocationAssignment, TrashItemResult } from '../shared/contracts';
+import type { BulkUpdateResult, LibrarySnapshot, PhotoSummary, PhotoType, ScanProgress, UpdateLocationsRequest, UpdateTypesRequest, ResolveScanLocationsRequest, LocationAssignment, UpdateCaptureTimeRequest, RenamePhotoRequest, RenamePhotoResult, TrashItemResult } from '../shared/contracts';
 import { photoMediaUrl, photoThumbnailUrl } from '../shared/media-url';
 import { PhotoMapError } from '../shared/errors';
 import { validateAdministrativeLocation } from '../shared/administrative-regions';
 import { readExifGps } from './services/library-scan/exif-gps-reader';
 import type { RegionCatalog } from './services/regions/region-catalog';
 import { isImageFormat } from '../shared/contracts';
+import { normalizeCaptureLocalDateTime } from '../shared/capture-time';
 
 type Row = Record<string, unknown>;
 export class PhotoLibrary {
@@ -124,6 +125,7 @@ if (version < 4) this.database.exec(`ALTER TABLE photo ADD COLUMN media_kind TEX
           updated_at TEXT NOT NULL
         );
 PRAGMA user_version = 4;`);
+if (version < 5) this.database.exec("ALTER TABLE photo ADD COLUMN capture_time_local TEXT; ALTER TABLE photo ADD COLUMN capture_time_offset_minutes INTEGER; ALTER TABLE photo ADD COLUMN capture_time_source TEXT; PRAGMA user_version = 5;");
 
   }
   close(): void { this.cancelled = true; this.database.close(); }
@@ -136,7 +138,7 @@ PRAGMA user_version = 4;`);
       photos: rows.map((row): PhotoSummary => {
         const photoId = String(row.photo_id);
         const place = this.database.prepare('SELECT * FROM photo_place WHERE photo_id = ?').get(photoId) as Row | undefined;
-        return { photoId, fileName: path.basename(String(row.display_path)), folderPath: path.dirname(String(row.relative_path)), mediaUrl: photoMediaUrl(photoId), thumbnailUrl: photoThumbnailUrl(photoId), fileCreatedAtMs: row.file_created_at_ms === null ? null : Number(row.file_created_at_ms), captureTime: null, mediaKind: row.media_kind as PhotoSummary['mediaKind'], mediaFormat: row.media_format as PhotoSummary['mediaFormat'], pixelWidth: row.pixel_width === null ? null : Number(row.pixel_width), pixelHeight: row.pixel_height === null ? null : Number(row.pixel_height), decodeState: row.decode_state as PhotoSummary['decodeState'], lifecycleState: row.lifecycle_state as PhotoSummary['lifecycleState'], location: place ? {provinceGb:String(place.province_gb),...(place.city_gb ? {cityGb:String(place.city_gb)} : {})} : null, typeIds: (this.database.prepare('SELECT type_id FROM photo_type_link WHERE photo_id = ?').all(photoId) as Row[]).map(link=>String(link.type_id)), note: String(row.note ?? '') };
+        return { photoId, fileName: path.basename(String(row.display_path)), folderPath: path.dirname(String(row.relative_path)), mediaUrl: photoMediaUrl(photoId), thumbnailUrl: photoThumbnailUrl(photoId), fileCreatedAtMs: row.file_created_at_ms === null ? null : Number(row.file_created_at_ms), captureTime: row.capture_time_local ? {localDateTime:String(row.capture_time_local),offsetMinutes:row.capture_time_offset_minutes === null ? null : Number(row.capture_time_offset_minutes),source:row.capture_time_source as 'user'|'metadata'} : null, mediaKind: row.media_kind as PhotoSummary['mediaKind'], mediaFormat: row.media_format as PhotoSummary['mediaFormat'], pixelWidth: row.pixel_width === null ? null : Number(row.pixel_width), pixelHeight: row.pixel_height === null ? null : Number(row.pixel_height), decodeState: row.decode_state as PhotoSummary['decodeState'], lifecycleState: row.lifecycle_state as PhotoSummary['lifecycleState'], location: place ? {provinceGb:String(place.province_gb),...(place.city_gb ? {cityGb:String(place.city_gb)} : {})} : null, typeIds: (this.database.prepare('SELECT type_id FROM photo_type_link WHERE photo_id = ?').all(photoId) as Row[]).map(link=>String(link.type_id)), note: String(row.note ?? '') };
       }),
       photoTypes: (this.database.prepare('SELECT * FROM photo_type ORDER BY name').all() as Row[]).map(row=>({typeId:String(row.type_id),name:String(row.name),isBuiltin:Boolean(row.is_builtin)})),
       scan: this.progress,
@@ -223,6 +225,7 @@ PRAGMA user_version = 4;`);
             const metadataFormat = extension === 'jpeg' ? 'jpg' : extension;
             if (isImageFormat(metadataFormat as PhotoSummary['mediaFormat'])) {
               const metadata = await readExifGps(absolutePath,metadataFormat as 'jpg'|'png'|'heic'|'avif');
+              if (metadata.captureTime && existing?.capture_time_source !== 'user') this.database.prepare("UPDATE photo SET capture_time_local = ?,capture_time_offset_minutes = ?,capture_time_source = 'metadata' WHERE photo_id = ?").run(metadata.captureTime.localDateTime,metadata.captureTime.offsetMinutes,photoId);
               const counts = this.progress.metadata!;counts.examined++;
               if (metadata.hasExif) counts.exifCount++;
               if (metadata.metadataError) counts.metadataErrorCount++;
@@ -320,5 +323,33 @@ PRAGMA user_version = 4;`);
   }
 
   updateNote(photoId: string,note: string): BulkUpdateResult { if (note.length > 60) throw new PhotoMapError('INVALID_REQUEST','备注不能超过60字。'); return this.updateRows([photoId],id=>{this.database.prepare('UPDATE photo SET note = ? WHERE photo_id = ?').run(note,id);}); }
+
+  updateCaptureTime(request: UpdateCaptureTimeRequest): BulkUpdateResult {
+    const value = normalizeCaptureLocalDateTime(request.localDateTime);
+    if (!value) throw new PhotoMapError('INVALID_REQUEST','拍摄时间无效。');
+    return this.updateRows([request.photoId],id=>{this.database.prepare("UPDATE photo SET capture_time_local = ?,capture_time_offset_minutes = NULL,capture_time_source = 'user' WHERE photo_id = ?").run(value,id);});
+  }
+  async renamePhoto(request: RenamePhotoRequest): Promise<RenamePhotoResult> {
+    if (this.scanning) throw new PhotoMapError('RENAME_FAILED','请等待扫描结束。');
+    const row = this.database.prepare("SELECT * FROM photo WHERE photo_id = ? AND lifecycle_state = 'active'").get(request.photoId) as Row | undefined;
+    if (!row) throw new PhotoMapError('MEDIA_NOT_FOUND','照片不存在。');
+    const oldPath = String(row.display_path),name = request.newFileName.trim();
+    if (path.basename(name) !== name || /[<>:"/\\|?*\x00-\x1f]/u.test(name) || path.extname(name).toLowerCase() !== path.extname(oldPath).toLowerCase()) throw new PhotoMapError('INVALID_REQUEST','请输入保留原扩展名的有效文件名。');
+    if (name === path.basename(oldPath)) return {renamed:false,fileName:name,library:this.snapshot()};
+    const nextPath = path.join(path.dirname(oldPath),name);
+    let exists = false;try {await access(nextPath);exists=true;} catch { /* New destination. */ }
+    if (exists) throw new PhotoMapError('RENAME_FAILED','目标名称已经存在。');
+    const companion = this.database.prepare('SELECT * FROM photo_companion WHERE photo_id = ?').get(request.photoId) as Row | undefined;
+    const nextCompanion = companion ? path.join(path.dirname(nextPath),path.basename(nextPath,path.extname(nextPath))+path.extname(String(companion.display_path))) : null;
+    if (nextCompanion) {try {await access(nextCompanion);throw new PhotoMapError('RENAME_FAILED','实况伴随视频目标名称已经存在。');} catch(error) {if (error instanceof PhotoMapError) throw error;} }
+    await rename(oldPath,nextPath);
+    try { if (companion && nextCompanion) await rename(String(companion.display_path),nextCompanion); }
+    catch(error) {await rename(nextPath,oldPath);throw error;}
+    const source = this.getSource()!,relativePath=path.relative(String(source.root_path),nextPath);
+    const key=(value:string)=>process.platform === 'win32' ? value.toLowerCase() : value;
+    this.database.prepare('UPDATE photo SET display_path=?,relative_path=?,canonical_path_key=? WHERE photo_id=?').run(nextPath,relativePath,key(nextPath),request.photoId);
+    if (nextCompanion) this.database.prepare('UPDATE photo_companion SET display_path=?,relative_path=?,canonical_path_key=? WHERE photo_id=?').run(nextCompanion,path.relative(String(source.root_path),nextCompanion),key(nextCompanion),request.photoId);
+    this.revision();return {renamed:true,fileName:name,library:this.snapshot()};
+  }
 
 }
