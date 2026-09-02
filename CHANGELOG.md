@@ -2,6 +2,24 @@
 
 格式遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## 0.3.0 - 2026-09-02
+
+### 新增
+
+- 支持普通照片、普通视频、Apple Live Photo 与 Android Motion Photo 的识别与展示
+- 明信片模式支持编辑拍摄时间、在原文件夹内重命名文件、投递最后一张明信片
+- 侧栏按文件夹筛选
+
+### 变更
+
+- 使用 ExifReader 强化 EXIF / GPS 解析
+- 移除与 `typecheck` 重复的 `lint` 脚本
+- 优化批量批注与明信片媒体交互
+
+### 修复
+
+- 未标记地点筛选的计数与交互
+
 ## 0.2.0 - 2026-08-30
 
 ### 新增

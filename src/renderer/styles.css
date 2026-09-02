@@ -468,6 +468,8 @@ input, select, textarea { min-width: 0; border: 1px solid #c6d1c8; border-radius
 .dialog-overlay { position: fixed; z-index: 150; inset: 0; background: #0005; display: grid; place-items: center; }
 .simple-dialog { padding: 28px; background: #fffdf7; border-radius: 12px; width: min(560px, 90vw); }
 .simple-dialog footer { display: flex; flex-wrap: wrap; gap: 8px; }
+.delivery-completion { text-align: center; padding: 60px 20px; }
+.delivery-completion img { width: 180px; height: 140px; object-fit: cover; margin: 10px; border: 10px solid #fffdf7; transform: rotate(-4deg); }
 .library-content .wall-workspace { height: calc(100vh - 205px); }
 .postcard-workspace .memory-paper.front { border: 8px solid transparent; border-image: repeating-linear-gradient(45deg, #9b4a43 0 12px, #fffbed 12px 24px, #496e81 24px 36px, #fffbed 36px 48px) 8; }
 .postcard-workspace .memory-deck::after { content: ""; position: absolute; width: 95px; height: 170px; bottom: -18px; right: -65px; background: url("./assets/vintage-green-mailbox.png") center / contain no-repeat; pointer-events: none; }
