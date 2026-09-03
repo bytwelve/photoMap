@@ -1,83 +1,158 @@
-import { app, dialog, ipcMain, net, protocol } from 'electron';
+import { app, dialog } from 'electron';
 import started from 'electron-squirrel-startup';
-import { readFile, writeFile, stat } from 'node:fs/promises';
-import { pathToFileURL } from 'node:url';
-import path from 'node:path';
-import { configureAppPaths,initializeAppDirectories } from './bootstrap/app-paths';
+import { PhotoMapController } from './app-controller';
+import { configureAppPaths, initializeAppDirectories } from './bootstrap/app-paths';
 import { createMainWindow } from './bootstrap/create-window';
-import { DEFAULT_APP_SETTINGS,PHOTO_MAP_CHANNELS } from '../shared/contracts';
-import type { AppSettings,WindowAction } from '../shared/contracts';
-import { parseAppSettings } from '../shared/settings';
-import { PhotoMapError } from '../shared/errors';
-import { PhotoLibrary } from './library';
-import { parseUpdateLocationsRequest,parseUpdateTypesRequest,parseCreateTypeRequest,parseTrashPhotosRequest,parseSaveExportRequest,parseResolveScanLocationsRequest,parseUpdateNoteRequest,parseUpdateCaptureTimeRequest,parseRenamePhotoRequest } from '../shared/schemas';
+import { flushRendererSettings } from './bootstrap/flush-renderer-settings';
+import { registerPhotoMapHandlers, removePhotoMapHandlers } from './ipc/register-handlers';
+import { registerControlledProtocols } from './infrastructure/media-protocol/register-protocols';
+import {
+  CATALOG_SCHEMA_VERSION,
+  NodeSqliteCatalogRepository
+} from './infrastructure/sqlite/catalog-repository';
+import { JsonlDiagnostics } from './infrastructure/diagnostics/diagnostics';
+import { AtomicSettingsStore } from './infrastructure/settings/settings-store';
 import { AtomicExportService } from './services/export/atomic-export';
 import { ElectronExportEncoder } from './services/export/electron-export-encoder';
-import { shell } from 'electron';
+import { ElectronRecycleBin } from './services/file-trash/electron-recycle-bin';
+import { TrashService } from './services/file-trash/trash-service';
+import { ElectronMediaProbe } from './services/library-scan/electron-media-probe';
+import { ExifGpsProbe } from './services/library-scan/exif-gps-reader';
+import { LibraryScanner } from './services/library-scan/library-scanner';
 import { MapDataService } from './services/map-data/map-data-service';
 import { RegionCatalog } from './services/regions/region-catalog';
-import manifest from '../shared/map-data-manifest.json';
+import { ThumbnailCache } from './services/thumbnails/thumbnail-cache';
+import { PhotoMapError } from '../shared/errors';
 
-if (started) app.quit();
+if (started) {
+  app.quit();
+}
+
 app.setName('PhotoMap');
 const paths = configureAppPaths();
-protocol.registerSchemesAsPrivileged([{scheme:'photomap-media',privileges:{standard:true,secure:true,supportFetchAPI:true,stream:true}},{scheme:'photomap-asset',privileges:{standard:true,secure:true,supportFetchAPI:true}}]);
-app.whenReady().then(async()=>{
-  await initializeAppDirectories(paths);
-  const window = createMainWindow(MAIN_WINDOW_WEBPACK_ENTRY,MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY);
-  let settings: AppSettings = structuredClone(DEFAULT_APP_SETTINGS);
-  try {settings=parseAppSettings(JSON.parse(await readFile(paths.settingsPath,'utf8')));} catch { /* Use defaults for first run. */ }
-  const handle = (channel:string,operation:(value:unknown)=>unknown) => ipcMain.handle(channel,async(event,value:unknown)=>{
-    try {
-      if (event.sender !== window.webContents || event.senderFrame !== window.webContents.mainFrame) throw new PhotoMapError('UNAUTHORIZED_IPC','请求来源无效。');
-      return {ok:true,value:await operation(value)};
-    } catch(error) {return {ok:false,error:{code:error instanceof PhotoMapError ? error.code : 'UNKNOWN_ERROR',userMessage:error instanceof Error ? error.message : '操作失败。',scope:'task',retryability:'retry'}};}
-  });
-  const regions=new RegionCatalog(),mapData=new MapDataService(paths.mapDataDirectory,regions);await mapData.initialize();
-  const library = new PhotoLibrary(paths,progress=>{if(!window.isDestroyed())window.webContents.send(PHOTO_MAP_CHANNELS.scanProgress,progress);},regions);
-  protocol.handle('photomap-media',async(request)=>{
-    const url=new URL(request.url);if(url.hostname!=='photo')return new Response(null,{status:404});
-    const filePath=library.mediaPath(decodeURIComponent(url.pathname.slice(1)),url.searchParams.get('size')==='thumb',url.searchParams.get('content')==='motion');
-    if(!filePath)return new Response(null,{status:404});
-    try {await stat(filePath);return net.fetch(pathToFileURL(filePath).href,{headers:request.headers});}catch{return new Response(null,{status:404});}
-  });
-  window.once('closed',()=>library.close());
-  protocol.handle('photomap-asset',async(request)=>{
-    const url=new URL(request.url),name=path.basename(url.pathname);
-    if(url.hostname!=='data'||!['china-provinces.geojson','china-city-view.geojson'].includes(name))return new Response(null,{status:404});
-    try{return net.fetch(pathToFileURL(path.join(paths.mapDataDirectory,name)).href);}catch{return new Response(null,{status:404});}
-  });
+const hasSingleInstanceLock = app.requestSingleInstanceLock();
+if (!hasSingleInstanceLock) {
+  app.quit();
+}
 
-  handle(PHOTO_MAP_CHANNELS.getAppInfo,async()=>({name:app.getName(),version:app.getVersion(),platform:process.platform,isPackaged:app.isPackaged,mapData:await mapData.getStatus()}));
-  handle(PHOTO_MAP_CHANNELS.getSettings,()=>settings);
-  handle(PHOTO_MAP_CHANNELS.updateSettings,async(value)=>{settings=parseAppSettings(value);await writeFile(paths.settingsPath,JSON.stringify(settings),'utf8');return settings;});
-  handle(PHOTO_MAP_CHANNELS.windowAction,(value)=>{const action=value as WindowAction;if(action==='minimize')window.minimize();else if(action==='toggleMaximize'){if(window.isMaximized())window.unmaximize();else window.maximize();}else if(action==='close')window.close();return {maximized:window.isMaximized()};});
-  handle(PHOTO_MAP_CHANNELS.getLibrary,()=>library.snapshot());
-  handle(PHOTO_MAP_CHANNELS.chooseLibrary,async()=>{const result=await dialog.showOpenDialog(window,{properties:['openDirectory'],title:'选择照片文件夹'});if(result.canceled||!result.filePaths[0])return {cancelled:true,library:library.snapshot()};return {cancelled:false,library:await library.activate(result.filePaths[0])};});
-  handle(PHOTO_MAP_CHANNELS.refreshLibrary,()=>library.scan());
-  handle(PHOTO_MAP_CHANNELS.cancelScan,()=>library.cancel());
-  handle(PHOTO_MAP_CHANNELS.updateLocations,value=>library.updateLocations(parseUpdateLocationsRequest(value)));
-  handle(PHOTO_MAP_CHANNELS.updateTypes,value=>library.updateTypes(parseUpdateTypesRequest(value)));
-  handle(PHOTO_MAP_CHANNELS.createType,value=>library.createType(parseCreateTypeRequest(value).name));
-  handle(PHOTO_MAP_CHANNELS.trashPhotos,value=>library.trash(parseTrashPhotosRequest(value).photoIds));
-  handle(PHOTO_MAP_CHANNELS.saveExport,async(value)=>{
-    const request=parseSaveExportRequest(value),result=await dialog.showSaveDialog(window,{defaultPath:path.join(app.getPath('pictures'),path.basename(request.suggestedName)),filters:[{name:'PNG 图像',extensions:['png']}]});
-    if(result.canceled||!result.filePath)return {cancelled:true};
-    await new AtomicExportService(new ElectronExportEncoder()).save(result.filePath,request);return {cancelled:false,savedPath:result.filePath};
+let repository: NodeSqliteCatalogRepository | null = null;
+let controller: PhotoMapController | null = null;
+let diagnostics: JsonlDiagnostics | null = null;
+let mainWindow: Electron.BrowserWindow | null = null;
+let shuttingDown = false;
+let allowImmediateExit = false;
+
+async function startApplication(): Promise<void> {
+  await initializeAppDirectories(paths);
+  diagnostics = new JsonlDiagnostics(paths.logsDirectory, app.getVersion(), CATALOG_SCHEMA_VERSION);
+  const settingsStore = new AtomicSettingsStore(paths.settingsPath);
+  const settingsLoad = await settingsStore.initialize();
+  if (settingsLoad.recoveredFromInvalid) {
+    await diagnostics
+      .record({ stage: 'settings', errorCode: 'SETTINGS_READ_FAILED', counts: { failed: 1 } })
+      .catch(() => undefined);
+  }
+  repository = await NodeSqliteCatalogRepository.open(paths.databasePath, {
+    backupsDirectory: paths.backupsDirectory,
   });
-  handle(PHOTO_MAP_CHANNELS.importMapData,async()=>{
-    const selection=await dialog.showOpenDialog(window,{properties:['openFile','multiSelections'],filters:[{name:'地图数据',extensions:['geojson','json']}]});
-    if(selection.canceled)return {cancelled:true,accepted:[],rejected:[],status:await mapData.getStatus()};
-    const imported=await mapData.importFiles(selection.filePaths);
-    if(imported.status.ready && library.getSource())await library.scan();
-    return {cancelled:false,...imported};
+  const regions = new RegionCatalog();
+  const mapData = new MapDataService(paths.mapDataDirectory, regions);
+  await mapData.initialize();
+  const scanner = new LibraryScanner(repository, new ElectronMediaProbe(), new ExifGpsProbe(), regions);
+  const trashService = new TrashService(repository, new ElectronRecycleBin());
+  const exportService = new AtomicExportService(new ElectronExportEncoder());
+  const thumbnailCache = new ThumbnailCache(paths.thumbnailRoot);
+  const window = createMainWindow(MAIN_WINDOW_WEBPACK_ENTRY, MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY);
+  mainWindow = window;
+  window.on('close', (event) => {
+    if (allowImmediateExit) return;
+    event.preventDefault();
+    app.quit();
   });
-  handle(PHOTO_MAP_CHANNELS.openMapDownload,async()=>{await shell.openExternal(manifest.sourceUrl);return {opened:true};});
-  handle(PHOTO_MAP_CHANNELS.resolveScanLocations,value=>library.resolveLocations(parseResolveScanLocationsRequest(value)));
-  handle(PHOTO_MAP_CHANNELS.updateNote,value=>{const request=parseUpdateNoteRequest(value);return library.updateNote(request.photoId,request.note);});
-  handle(PHOTO_MAP_CHANNELS.updateCaptureTime,value=>library.updateCaptureTime(parseUpdateCaptureTimeRequest(value)));
-  handle(PHOTO_MAP_CHANNELS.renamePhoto,value=>library.renamePhoto(parseRenamePhotoRequest(value)));
+  controller = new PhotoMapController(
+    window,
+    repository,
+    scanner,
+    regions,
+    trashService,
+    exportService,
+    settingsStore,
+    diagnostics,
+    mapData
+  );
+
+  registerControlledProtocols(
+    repository,
+    paths.assetRoot,
+    paths.mapDataDirectory,
+    thumbnailCache,
+    () => regions.isAvailable()
+  );
+  registerPhotoMapHandlers(controller, window);
+  window.on('closed', removePhotoMapHandlers);
+  app.on('second-instance', () => {
+    if (window.isMinimized()) {
+      window.restore();
+    }
+    window.show();
+    window.focus();
+  });
 
   await window.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+  await diagnostics.record({ stage: 'startup', counts: { succeeded: 1 } }).catch(() => undefined);
+  controller.resumeActiveLibrary();
+}
+
+app.whenReady().then(startApplication).catch(async (error: unknown) => {
+  await diagnostics
+    ?.record({
+      stage: 'startup',
+      errorCode: error instanceof PhotoMapError ? error.code : 'UNKNOWN_ERROR',
+      counts: { failed: 1 }
+    })
+    .catch(() => undefined);
+  await diagnostics?.flush().catch(() => undefined);
+  const detail = error instanceof Error ? error.message : '未知错误';
+  dialog.showErrorBox('用照片拼地图无法启动', detail);
+  app.quit();
 });
-app.on('window-all-closed',()=>app.quit());
+
+app.on('window-all-closed', () => app.quit());
+app.on('before-quit', (event) => {
+  if (allowImmediateExit) {
+    return;
+  }
+  event.preventDefault();
+  if (shuttingDown) {
+    return;
+  }
+  shuttingDown = true;
+  void (async () => {
+    let shutdownFailed = false;
+    if (mainWindow !== null && !mainWindow.isDestroyed()) {
+      mainWindow.setEnabled(false);
+      await flushRendererSettings(mainWindow).catch(() => { shutdownFailed = true; });
+    }
+    await controller?.shutdown().catch(() => {
+      shutdownFailed = true;
+    });
+    controller = null;
+    try {
+      repository?.close();
+    } catch {
+      shutdownFailed = true;
+    }
+    repository = null;
+    await diagnostics
+      ?.record({
+        stage: 'shutdown',
+        ...(shutdownFailed ? { errorCode: 'UNKNOWN_ERROR' as const } : {}),
+        counts: shutdownFailed ? { failed: 1 } : { succeeded: 1 }
+      })
+      .catch(() => undefined);
+    await diagnostics?.flush().catch(() => undefined);
+    diagnostics = null;
+    allowImmediateExit = true;
+    app.exit(0);
+  })();
+});

@@ -1,0 +1,71 @@
+@media (max-width: 1320px) {
+  .app-header { grid-template-columns: 245px minmax(390px, 1fr) 245px; }
+  .mode-switch { min-width: 340px; }
+  .mode-switch button { min-width: 140px; }
+  .app-body { grid-template-columns: 230px minmax(500px, 1fr) 248px; }
+  .app-body.postcard-layout { grid-template-columns: 230px minmax(0, 1fr); }
+  .postcard-toolbar { grid-template-columns: 166px minmax(180px, 1fr) 166px; }
+  .postcard-toolbar .annotation-mode-button { width: 146px; }
+  .auto-scroll-button { min-width: 94px; padding: 0 8px; }
+  .auto-speed-control { grid-template-columns: auto 54px 34px; gap: 4px; padding: 0 6px; }
+  .auto-speed-control input { width: 54px; }
+  .postcard-stage-controls { width: min(480px, calc(100% - 64px)); gap: 10px; padding-inline: 10px; }
+  .postcard-stage-controls .postcard-counter { min-width: 112px; padding-right: 10px; }
+  .postcard-stage-controls .auto-scroll-controls { gap: 10px; }
+  .postcard-stage-controls .auto-scroll-button { min-width: 96px; padding: 0 10px; }
+  .postcard-stage-controls .auto-speed-control { grid-template-columns: auto minmax(60px, 72px) 48px; gap: 6px; padding: 0 0 0 10px; }
+  .postcard-stage-controls .auto-speed-control output { width: 48px; }
+  .postcard-deck, .postcard-flight-layer { width: min(790px, 70%); }
+  .postcard-mailbox { height: 56%; top: 19.8%; right: 3.5%; }
+  .postcard-completion-content { right: clamp(122px, 15vw, 174px); padding-right: 26px; padding-left: 26px; }
+  .postcard-completion-copy h1 { font-size: clamp(23px, 2.35vw, 29px); }
+  .postcard-completion-spread { width: min(700px, 94%); }
+  .postcard-completion-mailbox { height: min(60%, 480px); top: 29%; right: 2.4%; }
+  .batch-toolbar { gap: 8px; padding: 0 10px; }
+  .batch-toolbar-leading { gap: 10px; }
+  .batch-toolbar .annotation-mode-button { width: 140px; }
+  .batch-summary { gap: 12px; font-size: var(--font-secondary); }
+  .batch-summary strong { font-size: var(--font-body); }
+  .batch-toolbar-actions { gap: 4px; }
+  .batch-toolbar-actions button { padding: 0 7px; }
+  .batch-column-control { gap: 4px; font-size: var(--font-secondary); }
+  .batch-column-input { width: 48px; }
+}
+
+@media (max-width: 760px) {
+  .fixed-photo-toolbar { align-items: stretch; flex-direction: column; gap: 4px; }
+  .fixed-photo-toolbar label { min-width: 0; width: 100%; }
+  .fixed-photo-toolbar strong { padding-bottom: 0; }
+  .fixed-photo-dialog > footer { align-items: stretch; flex-wrap: wrap; }
+  .fixed-photo-selection-status { flex-basis: 100%; }
+}
+
+@media (max-height: 820px) {
+  .memory-workspace { grid-template-rows: 48px minmax(0, 1fr); }
+  .memory-workspace.is-delivery-complete { grid-template-rows: minmax(0, 1fr); }
+  .postcard-toolbar { padding-top: 5px; padding-bottom: 5px; }
+  .postcard-stage { --postcard-deck-top: clamp(48px, 9%, 66px); }
+  .postcard-stage-controls { height: 46px; top: max(4px, calc(var(--postcard-deck-top) - 52px)); gap: 10px; padding: 5px 10px; border-radius: 13px; }
+  .postcard-stage-controls .postcard-counter { height: 32px; }
+  .postcard-stage-controls .auto-scroll-button,
+  .postcard-stage-controls .auto-speed-control { height: 34px; }
+  .postcard-stage-controls .auto-speed-control output { height: 28px; }
+  .postcard-deck, .postcard-flight-layer { width: min(760px, 66%); }
+  .postcard-completion-content { padding-top: 24px; padding-bottom: 24px; }
+  .postcard-completion-copy h1 { font-size: clamp(22px, 2vw, 28px); }
+  .postcard-completion-copy p { margin-top: 7px; }
+  .postcard-completion-ornament { margin-top: 4px; }
+  .postcard-completion-spread { height: clamp(178px, 34vh, 262px); margin-top: 3px; }
+  .postcard-completion-review { min-width: 214px; height: 50px; }
+  .postcard-completion-actions { gap: 4px; }
+  .postcard-completion-mailbox { height: min(61%, 430px); top: 28%; }
+  .postcard-copy { gap: 6px; padding-top: 18px; padding-bottom: 12px; }
+  .postcard-type-editor > div { max-height: 50px; }
+  .postcard-note textarea { min-height: 45px; }
+  .detail-hero { aspect-ratio: 1.9; }
+  .sidebar-section { padding-top: 11px; padding-bottom: 11px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}

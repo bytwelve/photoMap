@@ -1,288 +1,588 @@
-import { useEffect, useState } from 'react';
-import type { LibrarySnapshot, WindowAction, ScanLocationDecision, MapDataStatus } from '../shared/contracts';
-import { PROVINCES, CITIES } from '../shared/administrative-regions';
-import { errorMessage, regionNamesFromOptions, toLibraryState, unwrapResult } from './bridge';
-import { PHOTO_MAP_ASSETS, DEFAULT_APP_SETTINGS } from '../shared/contracts';
-import type { MapSnapshot, RegionCollection, SelectedRegion, WallPhotoSelections } from './model';
-import type { RendererMapPreference } from './settings';
-import { PhotoWall } from './features/photo-wall/PhotoWall';
-import { loadRegionCollection } from './map-scene/scene';
-import { ExportDialog } from './features/export/ExportDialog';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { SpinnerGap, WarningCircle } from '@phosphor-icons/react';
+import { MEDIA_KINDS, type ScanLocationDecision, type ScanMetadataSummary, type WindowAction } from '../shared/contracts';
+import { CITIES, PROVINCES } from '../shared/administrative-regions';
+import { errorMessage, isAppError, regionNamesFromOptions, toLibraryState, unwrapResult } from './bridge';
+import { activeFiltersForMode, filterPhotos, intersectSelection, isWallEligiblePhoto, sortAnnotationPhotosByCreationTime, type PostcardEntryOrigin, wallPhotoSelectionKey } from './domain';
+import type { AppMode, MapSnapshot, SelectedRegion, WallPhotoSelections } from './model';
+import { BatchView } from './features/batch/BatchView';
+import { ContextSidebar } from './components/ContextSidebar';
+import { ExportDialog, TrashConfirmation } from './features/export/ExportDialog';
+import { PostcardView } from './features/postcard/PostcardView';
 import { MapDataSetup } from './components/MapDataSetup';
-import { PostcardPlayableMedia } from './features/postcard/PostcardMedia';
+import { PhotoWall } from './features/photo-wall/PhotoWall';
+import { ScanMetadataDialog } from './components/ScanMetadataDialog';
+import { EmptySource, Header, StatusBar, Toast } from './components/Shell';
+import { LeftSidebar } from './components/LeftSidebar';
+import { isTerminalScanProgress, shouldOfferScanMetadataLocations } from './library-state';
+import { normalizeAppSettings, rendererPreferencesFromSettings, safeDefaultSettings } from './settings';
+import { useFeedback } from './hooks/useFeedback';
+import { useAppPreferences, EMPTY_FILTERS } from './hooks/useAppPreferences';
+import { useLibraryScan } from './hooks/useLibraryScan';
+import { usePhotoActions } from './hooks/usePhotoActions';
+import { useMapData } from './hooks/useMapData';
+import { readWallAppInfo, wallMapGate } from './map-data-state';
 
-const names = regionNamesFromOptions(PROVINCES, CITIES);
+const ADMINISTRATIVE_REGION_NAMES = regionNamesFromOptions(PROVINCES, CITIES);
+
+interface MetadataPrompt {
+  runId: string;
+  total: number;
+  summary: ScanMetadataSummary;
+}
 
 export function App(): React.JSX.Element {
-  const [raw, setRaw] = useState<LibrarySnapshot>();
-  const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState('');
-  const [version, setVersion] = useState('');
-  const [query, setQuery] = useState('');
-  const [locationFilter, setLocationFilter] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [province, setProvince] = useState('');
-  const [city, setCity] = useState('');
-  const [typeId, setTypeId] = useState('');
-  const [newType, setNewType] = useState('');
-  const [mode, setMode] = useState<'batch' | 'wall' | 'memory'>('wall');
-  const [provinces, setProvinces] = useState<RegionCollection>();
-  const [cities, setCities] = useState<RegionCollection>();
-  const [mapError, setMapError] = useState('');
-  const [mapPreference, setMapPreference] = useState<RendererMapPreference>(DEFAULT_APP_SETTINGS.map);
+  const { feedback, announce } = useFeedback();
+  const { mode, setMode, filters, setFilters, mapPreference, setMapPreference, setSettingsReady } = useAppPreferences(announce);
+  const { rawLibrary, setRawLibrary, acceptLibrarySnapshot, reloadAfterTerminal, pendingSourceChangeRef } = useLibraryScan(announce);
+  const { createType, updateLocation, updateTypes, updateNote, updateCaptureTime, renamePhoto } = usePhotoActions({ acceptLibrarySnapshot, setRawLibrary, announce });
+  const { provinces, cities, appInfo, setAppInfo, appInfoError, setAppInfoError, mapError, mapDataBusy, loadMapCollections, clearMapCollections, importMapData, openMapDownload } = useMapData(announce);
+
+  const [startupError, setStartupError] = useState<string>();
+
+  const [loading, setLoading] = useState(true);
+
+  const [sourceBusy, setSourceBusy] = useState(false);
+
   const [selectedRegion, setSelectedRegion] = useState<SelectedRegion>();
-  const [fixedPhotos, setFixedPhotos] = useState<WallPhotoSelections>(new Map());
-  const [activeId, setActiveId] = useState('');
-  const [snapshot, setSnapshot] = useState<MapSnapshot>();
+
+  const [activePhotoId, setActivePhotoId] = useState<string>();
+
+  const [postcardEntryOrigin, setPostcardEntryOrigin] = useState<PostcardEntryOrigin>();
+
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const [wallPhotoSelections, setWallPhotoSelections] = useState<WallPhotoSelections>(() => new Map());
+
+  const [wallSnapshot, setWallSnapshot] = useState<MapSnapshot>();
+
   const [exportOpen, setExportOpen] = useState(false);
-  const [mapData, setMapData] = useState<MapDataStatus>();
-  const [mapBusy, setMapBusy] = useState(false);
-  const [dismissedRun, setDismissedRun] = useState<string>();
-  const [note, setNote] = useState('');
-  const [autoPlay, setAutoPlay] = useState(false);
-  const [mediaFilter, setMediaFilter] = useState('all');
-  const [folderFilter, setFolderFilter] = useState('');
-  const [captureTime, setCaptureTime] = useState('');
-  const [fileName, setFileName] = useState('');
-  const [deliveryComplete, setDeliveryComplete] = useState(false);
 
-  async function execute(work: () => Promise<void>): Promise<void> {
-    setBusy(true);
-    try { await work(); } catch (error) { setFeedback(errorMessage(error)); }
-    finally { setBusy(false); }
-  }
+  const [trashRequest, setTrashRequest] = useState<readonly string[]>();
 
-  useEffect(() => {
-    void execute(async () => {
-      setRaw(unwrapResult(await window.photoMap.getLibrary()));
-      const info = unwrapResult(await window.photoMap.getAppInfo());
-      setVersion(info.version);
-      setMapData(info.mapData);
-      if (info.mapData.ready) await loadMaps();
-    });
-    return window.photoMap.subscribeScanProgress((scan) => {
-      setRaw((current) => current ? { ...current, scan } : current);
-      if (scan.status !== 'running' && scan.status !== 'idle') {
-        void execute(async () => { setRaw(unwrapResult(await window.photoMap.getLibrary())); });
-      }
-    });
+  const [trashBusy, setTrashBusy] = useState(false);
+
+  const [metadataPrompt, setMetadataPrompt] = useState<MetadataPrompt>();
+
+  const [pendingMetadataDecision, setPendingMetadataDecision] = useState<ScanLocationDecision>();
+
+  const promptedMetadataRunIdsRef = useRef(new Set<string>());
+
+  const modeTransitionRevisionRef = useRef(0);
+
+  const library = useMemo(
+    () => rawLibrary ? toLibraryState(rawLibrary, ADMINISTRATIVE_REGION_NAMES) : undefined,
+    [rawLibrary],
+  );
+
+  const allPhotos = library?.photos ?? [];
+
+  const activeFilters = useMemo(() => activeFiltersForMode(filters, mode), [filters, mode]);
+
+  const filteredPhotos = useMemo(() => filterPhotos(allPhotos, activeFilters), [activeFilters, allPhotos]);
+
+  const wallPhotos = useMemo(() => allPhotos.filter(isWallEligiblePhoto), [allPhotos]);
+
+  const annotationPhotos = useMemo(
+    () => sortAnnotationPhotosByCreationTime(filteredPhotos),
+    [filteredPhotos],
+  );
+
+  const activePhoto = annotationPhotos.find((photo) => photo.id === activePhotoId) ?? annotationPhotos[0];
+
+  const selectedRegionFixedPhotoIds = selectedRegion
+    ? wallPhotoSelections.get(wallPhotoSelectionKey(selectedRegion.level, selectedRegion.code)) ?? []
+    : [];
+
+  const completePostcardEntry = useCallback((): void => {
+    setPostcardEntryOrigin(undefined);
   }, []);
 
+  const loadApplication = useCallback(async (): Promise<void> => {
+    setLoading(true);
+    setSettingsReady(false);
+    setStartupError(undefined);
+    setAppInfoError(undefined);
+    const libraryPromise = window.photoMap.getLibrary();
+    const infoPromise = window.photoMap.getAppInfo();
+    const settingsPromise = window.photoMap.getSettings();
+    const [libraryResult, infoResult, settingsResult] = await Promise.allSettled([
+      libraryPromise,
+      infoPromise,
+      settingsPromise,
+    ]);
+    if (libraryResult.status === 'fulfilled') {
+      try { acceptLibrarySnapshot(unwrapResult(libraryResult.value)); } catch (error) { setStartupError(errorMessage(error)); }
+    } else {
+      setStartupError(errorMessage(libraryResult.reason));
+    }
+    if (infoResult.status === 'fulfilled' && infoResult.value.ok) {
+      setAppInfo(infoResult.value.value);
+      setAppInfoError(undefined);
+      await loadMapCollections(infoResult.value.value.mapData);
+    } else {
+      setAppInfo(undefined);
+      clearMapCollections();
+      let reason = '应用信息暂时不可用';
+      if (infoResult.status === 'rejected') reason = errorMessage(infoResult.reason);
+      else if (!infoResult.value.ok) reason = infoResult.value.error.userMessage;
+      setAppInfoError(reason);
+      setStartupError((current) => current ?? reason);
+    }
+    if (settingsResult.status === 'fulfilled' && settingsResult.value.ok) {
+      const preferences = rendererPreferencesFromSettings(normalizeAppSettings(settingsResult.value.value));
+      setMode(preferences.mode);
+      setFilters(preferences.filters);
+      setMapPreference(preferences.map);
+    } else {
+      const preferences = rendererPreferencesFromSettings(safeDefaultSettings());
+      setMode(preferences.mode);
+      setFilters(preferences.filters);
+      setMapPreference(preferences.map);
+      let reason = '设置内容无效';
+      if (settingsResult.status === 'rejected') reason = errorMessage(settingsResult.reason);
+      else if (!settingsResult.value.ok) reason = settingsResult.value.error.userMessage;
+      announce(`设置加载失败，已使用安全默认值：${reason}`, 'warning');
+    }
+    setSettingsReady(true);
+    setLoading(false);
+  }, [acceptLibrarySnapshot, announce, clearMapCollections, loadMapCollections]);
+
+  useEffect(() => { void loadApplication(); }, [loadApplication]);
+
   useEffect(() => {
-    if (!feedback) return;
-    const timer = window.setTimeout(() => setFeedback(''), 7000);
-    return () => window.clearTimeout(timer);
-  }, [feedback]);
+    const progress = rawLibrary?.scan;
+    if (progress === undefined) return;
 
-  const library = raw ? toLibraryState(raw, names) : undefined;
-  const allPhotos = library?.photos ?? [];
-  const photos = allPhotos.filter((photo) => {
-    const locationMatch = !locationFilter || (locationFilter === 'unlocated' ? !photo.location : photo.location?.provinceCode === locationFilter || photo.location?.cityCode === locationFilter);
-    return locationMatch && (!typeFilter || photo.types.some((tag) => tag.id === typeFilter))
-      && (!query || [photo.name, photo.location?.provinceName, photo.location?.cityName, ...photo.types.map((tag) => tag.name)].some((value) => value?.includes(query)))
-      && (mediaFilter === 'all' || photo.mediaKind === mediaFilter)
-      && (!folderFilter || photo.folderPath === folderFilter || photo.folderPath?.startsWith(`${folderFilter}/`))
-      ;
-  });
-  useEffect(() => {
-    const visible = new Set(photos.map((photo) => photo.id));
-    setSelected((current) => new Set([...current].filter((id) => visible.has(id))));
-  }, [raw, query, locationFilter, typeFilter, mediaFilter, folderFilter]);
-
-  function togglePhoto(id: string): void {
-    setSelected((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  }
-
-  async function updateLocation(): Promise<void> {
-    await execute(async () => {
-      const result = unwrapResult(await window.photoMap.updateLocations({ photoIds: [...selected], location: province ? { provinceGb: province, ...(city ? { cityGb: city } : {}) } : null }));
-      setRaw(result.library);
-      setFeedback(`已更新 ${result.succeeded} 张照片的地点，失败 ${result.failed} 张`);
-    });
-  }
-
-  async function updateTypes(remove: boolean): Promise<void> {
-    if (!typeId) return;
-    await execute(async () => {
-      const result = unwrapResult(await window.photoMap.updateTypes({ photoIds: [...selected], addTypeIds: remove ? [] : [typeId], removeTypeIds: remove ? [typeId] : [] }));
-      setRaw(result.library);
-      setFeedback(`已更新 ${result.succeeded} 张照片的类型`);
-    });
-  }
-
-  async function createType(): Promise<void> {
-    if (!newType.trim()) return;
-    await execute(async () => {
-      const created = unwrapResult(await window.photoMap.createType({ name: newType.trim() }));
-      setRaw(unwrapResult(await window.photoMap.getLibrary()));
-      setTypeId(created.typeId);
-      setNewType('');
-    });
-  }
-
-  async function trashSelection(): Promise<void> {
-    if (selected.size === 0 || !window.confirm(`将 ${selected.size} 项源文件移入 Windows 回收站？`)) return;
-    await execute(async () => {
-      const result = unwrapResult(await window.photoMap.trashPhotos({ photoIds: [...selected], confirmed: true }));
-      setRaw(result.library);
-      setSelected(new Set());
-      setFeedback(`已移入回收站 ${result.items.filter((item) => item.status === 'moved').length} 项`);
-    });
-  }
-
-  async function loadMaps(): Promise<void> {
-    try {
-      const [provinceData, cityData] = await Promise.all([loadRegionCollection(PHOTO_MAP_ASSETS.provinceMap), loadRegionCollection(PHOTO_MAP_ASSETS.cityMap)]);
-      setProvinces(provinceData);
-      setCities(cityData);
-      setMapError('');
-    } catch (error) { setMapError(errorMessage(error)); }
-  }
-
-  function fixSelectedPhotos(): void {
-    if (!selectedRegion) return;
-    const key = `${selectedRegion.level}:${selectedRegion.code}`;
-    setFixedPhotos((current) => new Map(current).set(key, [...selected]));
-    setFeedback(`已固定 ${selected.size} 张照片`);
-  }
-  const activeIndex = Math.max(0, photos.findIndex((photo) => photo.id === activeId));
-  const active = photos[activeIndex];
-  const previous = photos[activeIndex - 1];
-  const next = photos[activeIndex + 1];
-
-  function navigate(direction: number): void {
-    if (direction > 0 && activeIndex === photos.length - 1) {
-      setDeliveryComplete(true);
-      setAutoPlay(false);
+    const metadataDecisionIsCurrent = shouldOfferScanMetadataLocations(progress);
+    setMetadataPrompt((current) =>
+      current !== undefined
+        && (current.runId !== progress.runId || !metadataDecisionIsCurrent)
+        ? undefined
+        : current,
+    );
+    const metadata = progress.metadata;
+    if (
+      !shouldOfferScanMetadataLocations(progress, promptedMetadataRunIdsRef.current)
+      || progress.runId === null
+      || metadata === undefined
+    ) {
       return;
     }
-    setDeliveryComplete(false);
-    const target = photos[Math.max(0, Math.min(photos.length - 1, activeIndex + direction))];
-    if (target) setActiveId(target.id);
-  }
-
-  useEffect(() => {
-    if (mode !== 'memory') return;
-    const onKey = (event: KeyboardEvent): void => {
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement) return;
-      if (event.key === 'ArrowLeft') navigate(-1);
-      if (event.key === 'ArrowRight') navigate(1);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [mode, activeIndex, photos]);
-
-  async function importMaps(): Promise<void> {
-    setMapBusy(true);
-    try {
-      const result = unwrapResult(await window.photoMap.importMapData());
-      setMapData(result.status);
-      if (result.status.ready) await loadMaps();
-      if (result.rejected.length) setFeedback(`有 ${result.rejected.length} 份地图未通过校验`);
-      if (result.status.ready && result.accepted.length > 0 && raw?.source) {
-        setRaw(unwrapResult(await window.photoMap.refreshLibrary()).library);
-      }
-    } catch (error) { setFeedback(errorMessage(error)); }
-    finally { setMapBusy(false); }
-  }
-
-  const scan = raw?.scan;
-  const metadataPrompt = scan?.metadata && scan.runId && scan.runId !== dismissedRun && (scan.status === 'succeeded' || scan.status === 'partial') && scan.metadata.examined > 0 ? scan : undefined;
-
-  async function resolveMetadata(decision: ScanLocationDecision): Promise<void> {
-    if (!metadataPrompt?.runId) return;
-    await execute(async () => {
-      const result = unwrapResult(await window.photoMap.resolveScanLocations({ runId: metadataPrompt.runId!, decision }));
-      setRaw(result.library);
-      setDismissedRun(metadataPrompt.runId!);
-      setFeedback(decision === 'ignore' ? '已保留现有标注' : `已处理 ${result.succeeded} 项扫描信息`);
+    promptedMetadataRunIdsRef.current.add(progress.runId);
+    setMetadataPrompt({
+      runId: progress.runId,
+      total: metadata.examined,
+      summary: metadata,
     });
-  }
-
-  useEffect(() => { setNote(active?.note ?? ''); }, [active?.id, active?.note]);
-  useEffect(() => {
-    if (!autoPlay || mode !== 'memory' || !active) return;
-    const timer = window.setTimeout(() => {
-      if (next) setActiveId(next.id);
-      else { setAutoPlay(false); setDeliveryComplete(true); }
-    }, 4000);
-    return () => window.clearTimeout(timer);
-  }, [autoPlay, mode, active?.id, next?.id]);
-
-  async function saveNote(): Promise<void> {
-    if (!active) return;
-    await execute(async () => { setRaw(unwrapResult(await window.photoMap.updateNote({ photoId: active.id, note })).library); setFeedback('备注已保存'); });
-  }
+  }, [rawLibrary?.scan]);
 
   useEffect(() => {
-    setCaptureTime(active?.captureTimeLocal ?? '');
-    setFileName(active?.name ?? '');
-  }, [active?.id, active?.name, active?.captureTimeLocal]);
+    if (annotationPhotos.length === 0) {
+      if (activePhotoId) setActivePhotoId(undefined);
+      return;
+    }
+    if (!activePhotoId || !annotationPhotos.some((photo) => photo.id === activePhotoId)) {
+      setActivePhotoId(annotationPhotos[0]?.id);
+    }
+  }, [activePhotoId, annotationPhotos]);
 
-  async function saveCaptureTime(): Promise<void> {
-    if (!active) return;
-    await execute(async () => { setRaw(unwrapResult(await window.photoMap.updateCaptureTime({ photoId: active.id, localDateTime: captureTime })).library); });
-  }
-
-  async function renamePhoto(): Promise<void> {
-    if (!active) return;
-    await execute(async () => { setRaw(unwrapResult(await window.photoMap.renamePhoto({ photoId: active.id, newFileName: fileName })).library); });
-  }
+  useEffect(() => {
+    const next = intersectSelection(selectedIds, filteredPhotos);
+    const removed = selectedIds.size - next.size;
+    if (removed > 0) {
+      setSelectedIds(next);
+      announce(`筛选变化后，已从选择中移除 ${removed} 项媒体`, 'info');
+    }
+  }, [filteredPhotos]);
 
   async function chooseSource(): Promise<void> {
-    await execute(async () => {
+    setSourceBusy(true);
+    setMetadataPrompt(undefined);
+    pendingSourceChangeRef.current = true;
+    try {
       const result = unwrapResult(await window.photoMap.chooseLibrary());
-      if (!result.cancelled) setRaw(result.library);
+      if (!result.cancelled) {
+        acceptLibrarySnapshot(result.library);
+        if (isTerminalScanProgress(result.library.scan)) void reloadAfterTerminal(result.library.scan);
+        setFilters(EMPTY_FILTERS);
+        setSelectedIds(new Set());
+        setWallPhotoSelections(new Map());
+        announce(`已选择“${result.library.source?.displayName ?? '照片文件夹'}”`);
+      }
+    } catch (error) {
+      announce(errorMessage(error), 'error');
+      if (!rawLibrary?.source) setStartupError(errorMessage(error));
+    } finally {
+      pendingSourceChangeRef.current = false;
+      setSourceBusy(false);
+    }
+  }
+
+  async function refreshSource(): Promise<void> {
+    try {
+      const result = unwrapResult(await window.photoMap.refreshLibrary());
+      acceptLibrarySnapshot(result.library);
+      if (isTerminalScanProgress(result.library.scan)) void reloadAfterTerminal(result.library.scan);
+      const failed = result.library.scan.counts.errors
+        + (result.library.scan.metadata?.metadataErrorCount ?? 0);
+      announce(
+        failed > 0 ? `扫描部分完成：${failed} 项异常，其余媒体已可使用` : '增量扫描完成',
+        failed > 0 ? 'warning' : 'success',
+      );
+    } catch (error) {
+      announce(errorMessage(error), 'error');
+      try {
+        acceptLibrarySnapshot(unwrapResult(await window.photoMap.getLibrary()));
+      } catch {
+        // The original refresh error is more useful; a failed recovery read is non-destructive.
+      }
+    }
+  }
+
+  async function cancelScan(): Promise<void> {
+    try {
+      const result = unwrapResult(await window.photoMap.cancelScan());
+      acceptLibrarySnapshot(result.library);
+      if (isTerminalScanProgress(result.library.scan)) void reloadAfterTerminal(result.library.scan);
+      announce(result.cancelled ? '扫描已安全取消，已完成结果仍会保留' : '当前没有可取消的扫描', 'info');
+    } catch (error) {
+      announce(errorMessage(error), 'error');
+    }
+  }
+
+  async function resolveMetadataLocations(decision: ScanLocationDecision): Promise<void> {
+    if (!metadataPrompt) return;
+    setPendingMetadataDecision(decision);
+    try {
+      const result = unwrapResult(await window.photoMap.resolveScanLocations({
+        runId: metadataPrompt.runId,
+        decision,
+      }));
+      acceptLibrarySnapshot(result.library);
+      if (decision === 'overwrite-all-resolved' || decision === 'fill-unlabeled-only') {
+        const action = decision === 'overwrite-all-resolved' ? '更新' : '补充';
+        const details = [
+          `地址 ${result.locations.succeeded} 张`,
+          `拍摄时间 ${result.captureTimes.succeeded} 张`,
+          ...(result.locations.skipped + result.captureTimes.skipped > 0
+            ? [`跳过 ${result.locations.skipped + result.captureTimes.skipped} 项`]
+            : []),
+        ];
+        announce(`已${action}扫描到的照片信息：${details.join('，')}`);
+      } else {
+        announce('已忽略本次扫描到的 GPS 与拍摄时间，保留现有信息', 'info');
+      }
+      setMetadataPrompt(undefined);
+    } catch (error) {
+      if (isAppError(error) && error.code === 'INVALID_REQUEST') {
+        setMetadataPrompt(undefined);
+        try {
+          acceptLibrarySnapshot(unwrapResult(await window.photoMap.getLibrary()));
+        } catch {
+          // The original stale-decision message remains the actionable feedback.
+        }
+      }
+      announce(errorMessage(error), 'error');
+    } finally {
+      setPendingMetadataDecision(undefined);
+    }
+  }
+
+  function changeMode(nextMode: AppMode, preservePostcardEntry = false): void {
+    const revision = modeTransitionRevisionRef.current + 1;
+    modeTransitionRevisionRef.current = revision;
+    if (!preservePostcardEntry) setPostcardEntryOrigin(undefined);
+    if (nextMode !== 'wall') {
+      setMode(nextMode);
+      return;
+    }
+
+    void (async () => {
+      const result = await readWallAppInfo(() => window.photoMap.getAppInfo());
+      if (modeTransitionRevisionRef.current !== revision) return;
+      if (!result.ok) {
+        setAppInfoError(result.error);
+        clearMapCollections();
+        setMode('wall');
+        announce(`地图数据状态刷新失败：${result.error}`, 'error');
+        return;
+      }
+
+      setAppInfo(result.appInfo);
+      setAppInfoError(undefined);
+      await loadMapCollections(result.appInfo.mapData);
+      if (modeTransitionRevisionRef.current === revision) setMode('wall');
+    })();
+  }
+
+  function openPostcardFromBatch(id: string, origin?: PostcardEntryOrigin): void {
+    setActivePhotoId(id);
+    if (!origin) {
+      changeMode('memory');
+      return;
+    }
+    setPostcardEntryOrigin(origin);
+    changeMode('memory', true);
+  }
+
+  async function confirmTrash(): Promise<void> {
+    const ids = trashRequest;
+    if (!ids?.length) return;
+    setTrashBusy(true);
+    try {
+      const result = unwrapResult(await window.photoMap.trashPhotos({ photoIds: [...ids], confirmed: true }));
+      acceptLibrarySnapshot(result.library);
+      const movedIds = new Set(result.items.filter((item) => item.status === 'moved').map((item) => item.photoId));
+      setSelectedIds((current) => new Set([...current].filter((id) => !movedIds.has(id))));
+      const moved = result.items.filter((item) => item.status === 'moved').length;
+      announce(`已移入回收站 ${moved} 项，失败 ${result.items.length - moved} 项`, moved === result.items.length ? 'success' : 'warning');
+      setTrashRequest(undefined);
+    } catch (error) {
+      announce(errorMessage(error), 'error');
+    } finally {
+      setTrashBusy(false);
+    }
+  }
+
+  function clearFilters(): void {
+    setFilters({ search: '', locationCodes: new Set(), includeUnlocated: false, mediaKinds: new Set(MEDIA_KINDS), folderPaths: new Set(), typeIds: new Set() });
+  }
+
+  function selectOnlyRegion(code: string): void {
+    setFilters((current) => ({ ...current, search: '', locationCodes: new Set([code]), includeUnlocated: false }));
+  }
+
+  function manageRegion(code: string): void {
+    selectOnlyRegion(code);
+    changeMode('batch');
+  }
+
+  function carouselRegion(code: string): void {
+    selectOnlyRegion(code);
+    changeMode('memory');
+  }
+
+  function updateWallFixedPhotos(region: SelectedRegion, photoIds: readonly string[]): void {
+    const uniquePhotoIds = [...new Set(photoIds)];
+    const key = wallPhotoSelectionKey(region.level, region.code);
+    setWallPhotoSelections((current) => {
+      const next = new Map(current);
+      if (uniquePhotoIds.length === 0) next.delete(key);
+      else next.set(key, uniquePhotoIds);
+      return next;
     });
+    announce(
+      uniquePhotoIds.length === 0
+        ? `已恢复${region.name}的自动选片，仅照片墙显示会变化`
+        : `已为${region.name}固定 ${uniquePhotoIds.length} 张照片，仅影响照片墙显示`,
+      'info',
+    );
   }
 
-  async function refresh(): Promise<void> {
-    await execute(async () => { setRaw(unwrapResult(await window.photoMap.refreshLibrary()).library); });
+  function openExportDialog(): void {
+    if (!wallSnapshot) return;
+    setExportOpen(true);
   }
 
-  const windowAction = (action: WindowAction): void => { void execute(async () => { unwrapResult(await window.photoMap.windowAction(action)); }); };
+  function closeExportDialog(): void {
+    setExportOpen(false);
+  }
 
-  return <div className="desktop-app" data-testid="app-shell">
-    <header className="app-header"><h1>用照片拼地图</h1>
-      <nav><button className={mode === 'wall' ? 'active' : ''} onClick={() => setMode('wall')}>照片墙</button><button className={mode === 'memory' ? 'active' : ''} onClick={() => setMode('memory')}>明信片批注</button><button className={mode === 'batch' ? 'active' : ''} onClick={() => setMode('batch')}>批量整理</button></nav>
-      <button onClick={() => windowAction('minimize')}>最小化</button><button onClick={() => windowAction('toggleMaximize')}>最大化</button><button onClick={() => windowAction('close')}>关闭</button>
-    </header>
-    <div className="source-toolbar"><strong>{library?.sourceName ?? '尚未选择照片文件夹'}</strong><button disabled={busy} onClick={() => void chooseSource()}>选择照片文件夹</button><button disabled={busy || !raw?.source} onClick={() => void refresh()}>重新扫描</button>
-      {raw?.scan.status === 'running' && <button onClick={() => void execute(async () => { setRaw(unwrapResult(await window.photoMap.cancelScan()).library); })}>取消扫描</button>}
-      {mode === 'wall' && <button disabled={!snapshot} onClick={() => setExportOpen(true)}>导出分享图</button>}
+  async function windowAction(action: WindowAction): Promise<void> {
+    try {
+      unwrapResult(await window.photoMap.windowAction(action));
+    } catch (error) {
+      announce(errorMessage(error), 'error');
+    }
+  }
+
+  const receiveWallSnapshot = useCallback((snapshot: MapSnapshot): void => {
+    setWallSnapshot(snapshot);
+  }, []);
+
+  const wallViewportSize = (): { width: number; height: number } => {
+    const bounds = document.querySelector<HTMLCanvasElement>('[data-testid="wall-canvas"]')?.getBoundingClientRect();
+    return { width: bounds?.width ?? 1200, height: bounds?.height ?? 720 };
+  };
+
+  if (loading) {
+    return (
+      <div className="desktop-app boot-screen">
+        <Header mode={mode} onModeChange={changeMode} onWindowAction={(action) => void windowAction(action)} />
+        <main><SpinnerGap className="spin" size={34} /><strong>正在打开本地照片地图</strong><span>校验索引与离线地图包…</span></main>
+      </div>
+    );
+  }
+
+  const mapGate = wallMapGate(mode, appInfo, appInfoError);
+
+  if (mapGate === 'app-info-error') {
+    return (
+      <div className="desktop-app" data-testid="app-shell">
+        <Header mode={mode} onModeChange={changeMode} onWindowAction={(action) => void windowAction(action)} />
+        <main className="fatal-screen" data-testid="map-data-info-error">
+          <WarningCircle size={36} />
+          <strong>无法确认地图数据状态</strong>
+          <span>{appInfoError ?? '应用信息暂时不可用，请重试。'}</span>
+          <button type="button" onClick={() => void loadApplication()}>重试</button>
+        </main>
+        <Toast feedback={feedback} />
+      </div>
+    );
+  }
+
+  if (mapGate === 'map-data-setup' && appInfo !== undefined) {
+    return (
+      <div className="desktop-app" data-testid="app-shell">
+        <Header mode={mode} onModeChange={changeMode} onWindowAction={(action) => void windowAction(action)} />
+        <MapDataSetup
+          status={appInfo.mapData}
+          busy={mapDataBusy}
+          onDownload={() => void openMapDownload()}
+          onImport={() => void importMapData()}
+        />
+        <footer className="empty-status"><span>完全离线 · 地图与照片不上传</span><span>版本 {appInfo.version}</span></footer>
+        <Toast feedback={feedback} />
+      </div>
+    );
+  }
+
+  if (!rawLibrary?.source) {
+    return (
+      <div className="desktop-app" data-testid="app-shell">
+        <Header mode={mode} onModeChange={changeMode} onWindowAction={(action) => void windowAction(action)} />
+        <EmptySource busy={sourceBusy} error={startupError} onChoose={() => void chooseSource()} onRetry={() => void loadApplication()} />
+        <footer className="empty-status"><span>完全离线 · 照片不上传</span>{appInfo?.version && <span>版本 {appInfo.version}</span>}</footer>
+        <Toast feedback={feedback} />
+      </div>
+    );
+  }
+
+  if (!library) {
+    return <div className="fatal-screen"><WarningCircle size={36} /><strong>本地索引暂时不可用</strong><button type="button" onClick={() => void loadApplication()}>重试</button></div>;
+  }
+
+  return (
+    <div className="desktop-app" data-testid="app-shell">
+      <Header mode={mode} onModeChange={changeMode} onWindowAction={(action) => void windowAction(action)} />
+      {!library.sourceAvailable && <div className="source-unavailable-banner"><WarningCircle size={16} /><span>当前照片文件夹不可访问；上次索引仍保留。可重新选择文件夹或重试扫描。</span><button type="button" onClick={() => void chooseSource()}>重新选择</button></div>}
+      <div className={[
+        'app-body',
+        library.sourceAvailable ? '' : 'has-banner',
+        mode === 'memory' ? 'postcard-layout' : '',
+      ].filter(Boolean).join(' ')}>
+        <LeftSidebar
+          mode={mode}
+          sourceName={library.sourceName ?? '照片文件夹'}
+          sourceAvailable={library.sourceAvailable}
+          photos={mode === 'wall' ? wallPhotos : allPhotos}
+          mediaKindPhotos={allPhotos}
+          photoTypes={library.photoTypes}
+          provinces={PROVINCES}
+          cities={CITIES}
+          scan={library.scan}
+          filters={filters}
+          onFiltersChange={setFilters}
+          onChooseSource={() => void chooseSource()}
+          onRefresh={() => void refreshSource()}
+          onCancelScan={() => void cancelScan()}
+          onCreateType={createType}
+          onOpenExport={openExportDialog}
+        />
+
+        {mode === 'wall' && (
+          <PhotoWall
+            provinces={provinces}
+            cities={cities}
+            mapError={mapError}
+            photos={filteredPhotos}
+            fixedPhotoSelections={wallPhotoSelections}
+            selectedRegion={selectedRegion}
+            mapPreference={mapPreference}
+            onMapPreferenceChange={setMapPreference}
+            onSelectedRegionChange={setSelectedRegion}
+            onSnapshotChange={receiveWallSnapshot}
+          />
+        )}
+        {mode === 'memory' && (
+          <PostcardView
+            photos={annotationPhotos}
+            activeId={activePhoto?.id}
+            provinces={PROVINCES}
+            cities={CITIES}
+            photoTypes={library.photoTypes}
+            onActiveIdChange={setActivePhotoId}
+            onClearFilters={clearFilters}
+            onGoBatch={() => changeMode('batch')}
+            onUpdateLocation={updateLocation}
+            onUpdateTypes={updateTypes}
+            onUpdateNote={updateNote}
+            onUpdateCaptureTime={updateCaptureTime}
+            onRenamePhoto={renamePhoto}
+            onRequestTrash={setTrashRequest}
+            entryOrigin={postcardEntryOrigin}
+            onEntryAnimationComplete={completePostcardEntry}
+          />
+        )}
+        {mode === 'batch' && (
+          <BatchView
+            photos={annotationPhotos}
+            selectedIds={selectedIds}
+            onSelectedIdsChange={setSelectedIds}
+            onSelectionMessage={(message) => announce(message, 'info')}
+            onClearFilters={clearFilters}
+            onGoCarousel={() => changeMode('memory')}
+            onOpenPostcard={openPostcardFromBatch}
+            onPostcardEntrySettled={completePostcardEntry}
+          />
+        )}
+
+        {mode !== 'memory' && (
+          <ContextSidebar
+            mode={mode}
+            allPhotos={allPhotos}
+            filteredPhotos={mode === 'batch' ? annotationPhotos : filteredPhotos}
+            activePhoto={activePhoto}
+            selectedIds={selectedIds}
+            selectedRegion={selectedRegion}
+            wallFixedPhotoIds={selectedRegionFixedPhotoIds}
+            provinces={PROVINCES}
+            cities={CITIES}
+            photoTypes={library.photoTypes}
+            onUpdateLocation={updateLocation}
+            onUpdateTypes={updateTypes}
+            onClearSelection={() => setSelectedIds(new Set())}
+            onRequestTrash={setTrashRequest}
+            onOnlyRegion={selectOnlyRegion}
+            onManageRegion={manageRegion}
+            onCarouselRegion={carouselRegion}
+            onWallFixedPhotosChange={updateWallFixedPhotos}
+          />
+        )}
+      </div>
+      <StatusBar
+        count={mode === 'wall' ? wallPhotos.length : allPhotos.length}
+        unitLabel={mode === 'wall' ? '张可用照片' : '项媒体'}
+        scan={library.scan}
+        version={appInfo?.version}
+      />
+      {exportOpen && wallSnapshot && <ExportDialog snapshot={wallSnapshot} viewportSize={wallViewportSize()} onClose={closeExportDialog} onSaved={(message) => announce(message)} />}
+      {trashRequest && <TrashConfirmation count={trashRequest.length} busy={trashBusy} onCancel={() => setTrashRequest(undefined)} onConfirm={() => void confirmTrash()} />}
+      {metadataPrompt && (
+        <ScanMetadataDialog
+          total={metadataPrompt.total}
+          exifCount={metadataPrompt.summary.exifCount}
+          gpsCount={metadataPrompt.summary.gpsCount}
+          resolvedLocationCount={metadataPrompt.summary.resolvedLocationCount}
+          captureTimeCount={metadataPrompt.summary.captureTimeCount}
+          metadataErrorCount={metadataPrompt.summary.metadataErrorCount}
+          busy={pendingMetadataDecision !== undefined}
+          pendingDecision={pendingMetadataDecision}
+          onDecision={(decision) => void resolveMetadataLocations(decision)}
+        />
+      )}
+      <Toast feedback={feedback} />
     </div>
-    {mode === 'wall' && !mapData?.ready ? mapData ? <MapDataSetup status={mapData} busy={mapBusy} onDownload={() => void execute(async () => { unwrapResult(await window.photoMap.openMapDownload()); })} onImport={() => void importMaps()} /> : <main className="empty-library"><h2>正在确认地图数据状态</h2><button onClick={() => void execute(async () => { setMapData(unwrapResult(await window.photoMap.getAppInfo()).mapData); })}>重试</button></main> :
-    !raw?.source ? <main className="empty-library"><h2>把照片放回走过的地方</h2><p>选择一个照片文件夹，递归扫描后建立本地索引。</p><button disabled={busy} onClick={() => void chooseSource()}>选择照片文件夹</button></main> : <div className="library-layout">
-      <aside className="library-sidebar">
-        <h2>组合筛选</h2><input aria-label="搜索照片" value={query} placeholder="照片名、地点、类型" onChange={(event) => setQuery(event.target.value)} />
-        <select aria-label="地点筛选" value={locationFilter} onChange={(event) => setLocationFilter(event.target.value)}><option value="">全部地点</option><option value="unlocated">未标记地点</option>{PROVINCES.map((region) => <option key={region.code} value={region.code}>{region.name}</option>)}{CITIES.map((region) => <option key={region.code} value={region.code}>{region.name}</option>)}</select>
-        <select aria-label="类型筛选" value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)}><option value="">全部类型</option>{library?.photoTypes.map((tag) => <option key={tag.id} value={tag.id}>{tag.name}</option>)}</select>
-        <select aria-label="媒体类型" value={mediaFilter} onChange={(event) => setMediaFilter(event.target.value)}><option value="all">所有媒体</option><option value="photo">照片</option><option value="video">视频</option><option value="live">实况照片</option></select>
-        <select aria-label="文件夹筛选" value={folderFilter} onChange={(event) => setFolderFilter(event.target.value)}><option value="">全部文件夹</option>{[...new Set(allPhotos.flatMap((photo) => photo.folderPath ? [photo.folderPath] : []))].sort().map((folder) => <option key={folder} value={folder}>{folder}</option>)}</select>
-        <h2>已选择 {selected.size} 项</h2><button onClick={() => setSelected(new Set(photos.map((photo) => photo.id)))}>全选当前结果</button><button onClick={() => setSelected(new Set())}>取消选择</button>
-        <select aria-label="标注省份" value={province} onChange={(event) => { setProvince(event.target.value); setCity(''); }}><option value="">清除地点</option>{PROVINCES.map((region) => <option key={region.code} value={region.code}>{region.name}</option>)}</select>
-        <select aria-label="标注城市" disabled={!province} value={city} onChange={(event) => setCity(event.target.value)}><option value="">仅标记省份</option>{CITIES.filter((region) => region.parentProvinceCode === province).map((region) => <option key={region.code} value={region.code}>{region.name}</option>)}</select>
-        <button disabled={busy || !selected.size} onClick={() => void updateLocation()}>应用地点</button>
-        <select aria-label="标注类型" value={typeId} onChange={(event) => setTypeId(event.target.value)}><option value="">选择类型</option>{library?.photoTypes.map((tag) => <option key={tag.id} value={tag.id}>{tag.name}</option>)}</select>
-        <button disabled={busy || !selected.size || !typeId} onClick={() => void updateTypes(false)}>添加类型</button><button disabled={busy || !selected.size || !typeId} onClick={() => void updateTypes(true)}>移除类型</button>
-        <input aria-label="新类型" placeholder="创建自定义类型" value={newType} onChange={(event) => setNewType(event.target.value)} /><button disabled={busy || !newType.trim()} onClick={() => void createType()}>创建类型</button>
-        <button disabled={busy || !selected.size} onClick={() => void trashSelection()}>移入回收站</button>
-        {selectedRegion && <><h2>{selectedRegion.name}</h2><button onClick={() => { setLocationFilter(selectedRegion.code); setMode('batch'); }}>整理该区域照片</button><button disabled={!selected.size} onClick={fixSelectedPhotos}>固定已选照片</button><button onClick={() => setFixedPhotos((current) => { const value = new Map(current); value.delete(`${selectedRegion.level}:${selectedRegion.code}`); return value; })}>恢复自动选片</button><button onClick={() => { setLocationFilter(selectedRegion.code); setMode('memory'); }}>翻阅该区域明信片</button></>}
-      </aside>
-      <section className="library-content">
-        {mode === 'wall' ? <PhotoWall provinces={provinces} cities={cities} mapError={mapError} photos={allPhotos} fixedPhotoSelections={fixedPhotos} selectedRegion={selectedRegion} mapPreference={mapPreference} onMapPreferenceChange={setMapPreference} onSelectedRegionChange={setSelectedRegion} onSnapshotChange={setSnapshot} /> :
-        mode === 'memory' ? deliveryComplete ? <section className="delivery-completion" data-testid="postcard-completion"><h2>投递完成，回忆已装订</h2><p>共 {photos.length} 张明信片</p><div>{photos.slice(-2).map((photo) => <img key={photo.id} src={photo.thumbnailUrl} alt={photo.name} />)}</div><button onClick={() => { setDeliveryComplete(false); setActiveId(photos[0]?.id ?? ''); }}>重新翻阅</button><button onClick={() => { setDeliveryComplete(false); setMode('batch'); }}>继续整理照片</button></section> : active ? <section className="memory-workspace postcard-workspace"><div className="memory-deck"><div className="memory-paper back-two" /><div className="memory-paper back-one" /><figure className="memory-paper front">{active.decodeState === 'valid' ? active.mediaKind === 'video' || active.mediaKind === 'live' ? <PostcardPlayableMedia photo={active} active={true} /> : <img src={active.mediaFormat === 'heic' || active.mediaFormat === 'avif' ? active.thumbnailUrl : active.mediaUrl} alt={active.name} /> : <div className="photo-problem">{active.decodeMessage}</div>}<figcaption>{active.name} · {active.location?.cityName ?? active.location?.provinceName ?? '未标记地点'}</figcaption></figure></div><div className="memory-controls"><button disabled={!previous} onClick={() => navigate(-1)}>上一张</button><span>{activeIndex + 1} / {photos.length}</span><button disabled={false} onClick={() => navigate(1)}>{next ? '下一张' : '投递最后一张'}</button><button onClick={() => setSelected(new Set([active.id]))}>标注此照片</button><button onClick={() => setAutoPlay((current) => !current)}>{autoPlay ? '暂停翻阅' : '自动翻阅'}</button></div><div className="memory-note"><input aria-label="明信片备注" maxLength={60} value={note} placeholder="为这一刻写下一句话" onChange={(event) => setNote(event.target.value)} /><button disabled={busy} onClick={() => void saveNote()}>保存备注</button></div><div className="memory-note"><input aria-label="拍摄时间" type="datetime-local" value={captureTime} onChange={(event) => setCaptureTime(event.target.value)} /><button disabled={busy} onClick={() => void saveCaptureTime()}>保存拍摄时间</button><input aria-label="源文件名称" value={fileName} onChange={(event) => setFileName(event.target.value)} /><button disabled={busy} onClick={() => void renamePhoto()}>重命名源文件</button></div><div className="memory-thumbnails">{photos.map((photo) => <button key={photo.id} className={photo.id === active.id ? 'active' : ''} onClick={() => setActiveId(photo.id)}><img src={photo.thumbnailUrl} alt={photo.name} /></button>)}</div></section> : <div className="empty-library">没有符合筛选的照片</div> :
-photos.length === 0 ? <div className="empty-library">没有符合条件的照片</div> : <div className="photo-grid">{photos.map((photo) => <article key={photo.id} className={selected.has(photo.id) ? 'photo-tile selected' : 'photo-tile'}><label><input type="checkbox" aria-label={`选择 ${photo.name}`} checked={selected.has(photo.id)} onChange={() => togglePhoto(photo.id)} />选择</label>{photo.decodeState === 'valid' ? <img src={photo.thumbnailUrl} alt={photo.name} loading="lazy" onClick={() => { setActiveId(photo.id); setDeliveryComplete(false); setMode('memory'); }} style={{ cursor: 'pointer' }} /> : <div className="photo-problem">{photo.decodeMessage}</div>}<footer>{photo.name}<br />{photo.location?.cityName ?? photo.location?.provinceName ?? '未标记地点'} · {photo.types.map((tag) => tag.name).join('、')} · {photo.mediaKind === 'video' ? '视频' : photo.mediaKind === 'live' ? '实况' : '照片'}</footer></article>)}</div>}
-      </section>
-    </div>}
-    <footer className="app-status"><span>{photos.length} 项照片</span><span>扫描：{raw?.scan.status ?? 'idle'} · 已发现 {raw?.scan.counts.discovered ?? 0} 项 · 异常 {raw?.scan.counts.errors ?? 0} 项</span><span>完全离线 · {version}</span></footer>
-    {exportOpen && snapshot && <ExportDialog snapshot={snapshot} viewportSize={{ width: 1200, height: 720 }} onClose={() => setExportOpen(false)} onSaved={setFeedback} />}
-    {metadataPrompt && <div className="dialog-overlay"><section className="simple-dialog" role="dialog" aria-modal="true"><h2>确认扫描到的照片信息</h2><p>发现 {metadataPrompt.metadata?.gpsCount} 张含 GPS 的照片，{metadataPrompt.metadata?.resolvedLocationCount} 张可定位，{metadataPrompt.metadata?.captureTimeCount} 张含拍摄时间。</p><footer><button disabled={busy} onClick={() => void resolveMetadata('fill-unlabeled-only')}>仅补充未标记信息</button><button disabled={busy} onClick={() => void resolveMetadata('overwrite-all-resolved')}>使用扫描信息覆盖</button><button disabled={busy} onClick={() => void resolveMetadata('ignore')}>保留现有信息</button></footer></section></div>}
-    {feedback && <div className="feedback-message" role="status">{feedback}</div>}
-  </div>;
+  );
 }

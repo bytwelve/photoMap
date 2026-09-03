@@ -18,7 +18,13 @@
     "package:forge": "electron-forge package --arch=x64",
     "package:portable": "node scripts/create-portable.cjs",
     "make:squirrel": "node scripts/create-squirrel.cjs",
-    "typecheck": "tsc --noEmit"
+    "generate:regions": "node scripts/generate-administrative-regions.cjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "check": "npm run typecheck && npm run lint && npm test"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
