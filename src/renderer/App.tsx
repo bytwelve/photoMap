@@ -6,6 +6,7 @@ import { errorMessage, isAppError, regionNamesFromOptions, toLibraryState, unwra
 import { activeFiltersForMode, filterPhotos, intersectSelection, isWallEligiblePhoto, sortAnnotationPhotosByCreationTime, type PostcardEntryOrigin, wallPhotoSelectionKey } from './domain';
 import type { AppMode, MapSnapshot, SelectedRegion, WallPhotoSelections } from './model';
 import { BatchView } from './features/batch/BatchView';
+import { trashResultFeedback } from './features/batch/trash-feedback';
 import { ContextSidebar } from './components/ContextSidebar';
 import { ExportDialog, TrashConfirmation } from './features/export/ExportDialog';
 import { PostcardView } from './features/postcard/PostcardView';
@@ -335,8 +336,8 @@ export function App(): React.JSX.Element {
       acceptLibrarySnapshot(result.library);
       const movedIds = new Set(result.items.filter((item) => item.status === 'moved').map((item) => item.photoId));
       setSelectedIds((current) => new Set([...current].filter((id) => !movedIds.has(id))));
-      const moved = result.items.filter((item) => item.status === 'moved').length;
-      announce(`已移入回收站 ${moved} 项，失败 ${result.items.length - moved} 项`, moved === result.items.length ? 'success' : 'warning');
+      const feedback = trashResultFeedback(result.items);
+      announce(feedback.message, feedback.tone);
       setTrashRequest(undefined);
     } catch (error) {
       announce(errorMessage(error), 'error');
