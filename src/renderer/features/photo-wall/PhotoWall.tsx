@@ -70,6 +70,7 @@ function MapCanvas(props: {
     }
   }, [props.onCameraChange, props.snapshot, size]);
 
+  // A scan can return the same layout ID with newly available photo files.
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -79,7 +80,7 @@ function MapCanvas(props: {
       setLoading(false);
     });
     return () => { active = false; };
-  }, [props.snapshot.id]);
+  }, [props.snapshot.id, props.snapshot.photosByRegion]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -98,6 +99,23 @@ function MapCanvas(props: {
     });
   }, [images, props.selectedRegion?.code, props.snapshot, size]);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return undefined;
+    const handleWheel = (event: WheelEvent): void => {
+      event.preventDefault();
+      const bounds = canvas.getBoundingClientRect();
+      props.onCameraChange(clampCamera(
+        { ...props.snapshot.camera, zoom: zoomFromWheel(props.snapshot.camera.zoom, event.deltaY) },
+        props.snapshot.viewBox,
+        props.snapshot.level === 'province' ? TERRAIN_BOUNDS : props.snapshot.viewBox,
+        { width: bounds.width, height: bounds.height },
+      ));
+    };
+    // React's delegated wheel listener is passive and cannot cancel page scrolling.
+    canvas.addEventListener('wheel', handleWheel, { passive: false });
+    return () => canvas.removeEventListener('wheel', handleWheel);
+  }, [props.onCameraChange, props.snapshot]);
 
   const regionAtEvent = useCallback((event: React.PointerEvent<HTMLCanvasElement>): RegionFeature | undefined => {
     const canvas = canvasRef.current;
@@ -192,13 +210,6 @@ function MapCanvas(props: {
         onPointerMove={movePointer}
         onPointerUp={finishPointer}
         onPointerCancel={finishPointer}
-        onWheel={(event) => {
-          event.preventDefault();
-          props.onCameraChange({
-            ...props.snapshot.camera,
-            zoom: zoomFromWheel(props.snapshot.camera.zoom, event.deltaY),
-          });
-        }}
         onKeyDown={keyboardNavigate}
       />
       {loading && <div className="map-loading"><MapTrifold size={26} weight="duotone" /><span>正在绘制离线地图…</span></div>}
@@ -263,6 +274,20 @@ export function PhotoWall(props: {
   }), [camera, density, level, regions, showPhotos, showPlaceNames, viewBox, wallPhotoGroups]);
   const validPhotos = props.photos.filter((photo) => photo.decodeState === 'valid');
 
+  useEffect(() => {
+    const slider = densitySliderRef.current;
+    if (!slider) return undefined;
+    const handleWheel = (event: WheelEvent): void => {
+      event.preventDefault();
+      event.stopPropagation();
+      const nextDensity = densityFromWheel(props.mapPreference.density, event.deltaY);
+      if (nextDensity !== props.mapPreference.density) {
+        props.onMapPreferenceChange({ ...props.mapPreference, density: nextDensity });
+      }
+    };
+    slider.addEventListener('wheel', handleWheel, { passive: false });
+    return () => slider.removeEventListener('wheel', handleWheel);
+  }, [props.mapPreference, props.onMapPreferenceChange]);
 
   useEffect(() => props.onSnapshotChange(snapshot), [props.onSnapshotChange, snapshot]);
 
@@ -313,10 +338,6 @@ export function PhotoWall(props: {
               value={density}
               aria-label="照片显示密度"
               aria-valuetext={density === BEST_MAP_DENSITY ? '最佳' : `密度 ${density}`}
-              onWheel={(event) => {
-                event.preventDefault();
-                props.onMapPreferenceChange({ ...props.mapPreference, density: densityFromWheel(density, event.deltaY) });
-              }}
               onChange={(event) => props.onMapPreferenceChange({
                 ...props.mapPreference,
                 density: Number(event.target.value) as MapDensity,

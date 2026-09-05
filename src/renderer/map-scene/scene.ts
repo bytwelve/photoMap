@@ -405,6 +405,10 @@ export function loadImage(url: string): Promise<HTMLImageElement> {
     image.onload = () => resolve(image);
     image.onerror = () => reject(new Error(`图片载入失败：${url}`));
     image.src = url;
+  }).catch((error: unknown) => {
+    // A refreshed library must be able to retry a temporarily unavailable file.
+    if (imagePromises.get(url) === promise) imagePromises.delete(url);
+    throw error;
   });
   imagePromises.set(url, promise);
   return promise;
