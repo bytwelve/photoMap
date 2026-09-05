@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "forbiddenDirectoryNames": [
+    ".git", ".agents", ".codex", ".idea", ".vscode", ".npm-cache", ".tools", ".local", ".playwright-cli",
+    "node_modules", "PhotoMapData", "releases", "coverage", "test-results"
+  ],
+  "sourceAllowedFileNames": [".env.example"],
+  "sourceAllowedDirectories": [".vscode"]
+}

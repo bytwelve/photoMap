@@ -1,0 +1,14 @@
+{
+  "name": "PhotoMap",
+  "title": "PhotoMap",
+  "authors": "PhotoMap contributors",
+  "description": "完全离线的 Windows 照片地图桌面应用",
+  "exe": "PhotoMap.exe",
+  "setupExe": "PhotoMap-Setup.exe",
+  "additionalFiles": [
+    { "src": "LICENSES.chromium.html", "target": "lib\\net45\\LICENSES.chromium.html" },
+    { "src": "version", "target": "lib\\net45\\version" }
+  ],
+  "noMsi": true,
+  "noDelta": true
+}

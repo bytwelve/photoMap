@@ -1,0 +1,45 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
+
+  // Every way into the code: the three Electron process entries declared in
+  // forge.config.ts, the build configuration itself, the Node build scripts and
+  // the two test layers.
+  "entry": [
+    "src/main/index.ts",
+    "src/preload/index.ts",
+    "src/renderer/main.tsx",
+    "forge.config.ts",
+    "webpack.main.ts",
+    "webpack.renderer.ts",
+    "webpack.rules.ts",
+    "scripts/**/*.cjs",
+    "tests/**/*.test.ts",
+    "tests/e2e/**/*.mjs"
+  ],
+
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "scripts/**/*.cjs",
+    "tests/**/*.{ts,mjs}",
+    "*.{ts,mjs}"
+  ],
+
+  // Report genuinely unreachable code, not merely over-wide visibility. A helper that
+  // is exported but only consumed inside its own module is a small style question; a
+  // symbol nothing reaches at all is the defect worth failing the build over.
+  "ignoreExportsUsedInFile": true,
+
+  // Webpack resolves these five by string name ("ts-loader", "style-loader", ...) in
+  // webpack.rules.ts and webpack.renderer.ts, so no import statement exists for knip
+  // to follow. They are load-bearing build dependencies: do not delete them.
+  "ignoreDependencies": [
+    "@vercel/webpack-asset-relocator-loader",
+    "css-loader",
+    "node-loader",
+    "style-loader",
+    "ts-loader"
+  ],
+
+  // Windows executables invoked by the packaging scripts and E2E process cleanup.
+  "ignoreBinaries": ["pwsh", "taskkill.exe"]
+}

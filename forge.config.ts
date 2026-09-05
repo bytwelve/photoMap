@@ -1,4 +1,5 @@
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import type { ForgeConfig } from '@electron-forge/shared-types';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { WebpackPlugin } from '@electron-forge/plugin-webpack';
@@ -7,15 +8,27 @@ import { mainConfig } from './webpack.main';
 import { rendererConfig } from './webpack.renderer';
 
 const runtimeMap = path.resolve(__dirname, 'resources/map');
+const runtimeLicenses = path.resolve(__dirname, 'out/build-resources/licenses');
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     executableName: 'PhotoMap',
-    extraResource: [runtimeMap],
+    extraResource: [runtimeMap, runtimeLicenses],
     name: 'PhotoMap'
   },
   rebuildConfig: {},
+  hooks: {
+    preMake: async () => {
+      throw new Error('Use npm run make: PhotoMap requires its verified Squirrel compatibility adapter.');
+    },
+    generateAssets: async () => {
+      execFileSync(process.execPath, [path.resolve(__dirname, 'scripts/build/collect-licenses.cjs')], {
+        cwd: __dirname,
+        stdio: 'inherit',
+      });
+    },
+  },
   makers: [],
   plugins: [
     new WebpackPlugin({

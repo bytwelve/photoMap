@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "files": [
+    ".gitignore", ".gitattributes", ".node-version", "package.json", "package-lock.json",
+    "tsconfig.json", "forge.config.ts", "webpack.main.ts", "webpack.renderer.ts",
+    "webpack.rules.ts", "vitest.config.mts", "eslint.config.mjs", "knip.jsonc",
+    "LICENSE", "THIRD_PARTY_NOTICES.md", "ASSETS.md"
+  ],
+  "directories": ["src", "resources", "scripts", "tests"],
+  "excludedDirectoryNames": [
+    ".git", ".agents", ".codex", ".idea", ".vscode", ".npm-cache", ".tools", ".local", ".playwright-cli",
+    ".webpack", "node_modules", "out", "dist", "coverage", "test-results", "output",
+    "PhotoMapData", "releases"
+  ],
+  "excludedFilePatterns": [
+    ".env", ".env.*", "*.pem", "*.key", "*.pfx", "*.p12", "*.geojson",
+    "*.log", "*.tsbuildinfo", ".DS_Store", "Thumbs.db", "Desktop.ini",
+    "*.bak", "*.backup", "*.orig", "*.rej", "*~", "*.tmp", "*.temp"
+  ]
+}

@@ -18,13 +18,16 @@
     "package:forge": "electron-forge package --arch=x64",
     "package:portable": "node scripts/create-portable.cjs",
     "make:squirrel": "node scripts/create-squirrel.cjs",
+    "package:verify": "node scripts/build/verify-package.cjs",
     "generate:regions": "node scripts/generate-administrative-regions.cjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "check": "npm run typecheck && npm run lint && npm test"
+    "unused:check": "knip",
+    "licenses:check": "node scripts/build/collect-licenses.cjs --check",
+    "check": "npm run typecheck && npm run lint && npm run unused:check && npm test && npm run licenses:check"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
