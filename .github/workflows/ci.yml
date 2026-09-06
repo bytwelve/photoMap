@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Static checks & tests (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Select npm version
+        shell: pwsh
+        run: |
+          $packageManager = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).packageManager
+          npm install --global $packageManager
+
+      - name: Clean install
+        run: npm ci
+
+      - name: Dependency audit
+        run: npm audit --audit-level=moderate
+
+      - name: Typecheck, lint, unused code, tests, licenses, docs
+        run: npm run check
+
+  package:
+    name: Package and launch (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 45
+    needs: check
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Select npm version
+        shell: pwsh
+        run: |
+          $packageManager = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).packageManager
+          npm install --global $packageManager
+
+      - name: Clean install
+        run: npm ci
+
+      - name: Package portable application
+        run: npm run package
+
+      - name: Verify licenses and package contents
+        run: npm run package:verify -- out/PhotoMap-portable-win32-x64
+
+      - name: Launch packaged app with public fixtures
+        run: npm run e2e:packaged
+
+      - name: Preserve E2E evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: packaged-e2e
+          path: test-results/packaged-e2e-*/
+          if-no-files-found: ignore
+          retention-days: 7

@@ -18,6 +18,8 @@
     "package:forge": "electron-forge package --arch=x64",
     "package:portable": "node scripts/create-portable.cjs",
     "make:squirrel": "node scripts/create-squirrel.cjs",
+    "e2e:packaged": "node scripts/e2e-packaged.cjs",
+    "e2e:map": "node scripts/e2e-packaged.cjs --map-data",
     "package:verify": "node scripts/build/verify-package.cjs",
     "generate:regions": "node scripts/generate-administrative-regions.cjs",
     "test": "vitest run",

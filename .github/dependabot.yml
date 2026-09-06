@@ -1,0 +1,58 @@
+# Dependency update proposals. Every pull request opened here is a proposal only:
+# this project pins exact versions on purpose, and docs/DEVELOPMENT.md#依赖维护 requires a
+# clean install, a dev launch, a full package and the E2E suite before any upgrade is
+# accepted. An audit number going green is not sufficient evidence.
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: monthly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Shanghai
+    # Rewrite the exact pin instead of widening it into a range.
+    versioning-strategy: increase
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+    groups:
+      # Ships inside the installer: needs the strictest verification.
+      runtime:
+        dependency-type: production
+        patterns: ["*"]
+      # Changing Electron or Forge invalidates packaging and installer evidence, so keep
+      # these apart from ordinary tooling bumps. Major versions are excluded here because
+      # DEVELOPMENT.md requires migrating Forge majors as an independent piece of work.
+      electron-toolchain:
+        dependency-type: development
+        patterns:
+          - "electron"
+          - "@electron-forge/*"
+          - "electron-winstaller"
+          - "@electron/*"
+        update-types: ["minor", "patch"]
+      # Lint, test and build tooling: affects the gate, not the shipped binary.
+      dev-tooling:
+        dependency-type: development
+        exclude-patterns:
+          - "electron"
+          - "@electron-forge/*"
+          - "electron-winstaller"
+          - "@electron/*"
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Shanghai
+    open-pull-requests-limit: 2
+    labels:
+      - dependencies
+    groups:
+      actions:
+        patterns: ["*"]

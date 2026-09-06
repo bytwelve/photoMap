@@ -1,0 +1,58 @@
+name: Windows installer validation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: installer-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  installer:
+    name: Build and inspect Squirrel installer
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+
+      - name: Select npm version
+        shell: pwsh
+        run: |
+          $packageManager = (Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).packageManager
+          npm install --global $packageManager
+
+      - name: Clean install
+        run: npm ci
+
+      - name: Dependency audit
+        run: npm audit --audit-level=moderate
+
+      - name: Check and build installer with the compatibility adapter
+        run: pwsh -NoProfile -File ./scripts/verify-local.ps1 -Gate all
+
+      - name: Verify portable payload and full licenses
+        run: npm run package:verify -- out/PhotoMap-portable-win32-x64
+
+      - name: Launch portable app with public fixtures
+        run: npm run e2e:packaged
+
+      # These are test builds, not a GitHub Release or installation acceptance.
+      - name: Preserve installer and verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer-validation
+          path: |
+            out/make/squirrel.windows/x64/
+            out/release-build.json
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7

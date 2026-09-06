@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "origin": "Project-owned AI-generated travel illustrations. Six files are distributed as JPEG so the fixture set matches the format most cameras and phones produce; beijing-great-wall.png stays PNG to keep both decode paths covered. Dimensions are unchanged. sourceSha256 identifies each original image.",
+  "license": "MIT",
+  "files": [
+    {
+      "fileName": "beijing-great-wall.png",
+      "bytes": 2757880,
+      "sha256": "ae49d84f007c1e185b96cfd4f0cc74945ca67afbc09c4318ae16d6ba0cbf1228",
+      "sourceSha256": "83bab90c4f6110d74b3c203d130057ae7642f12414e104c084bc9a67578748bb"
+    },
+    {
+      "fileName": "guilin-li-river.jpg",
+      "bytes": 353482,
+      "sha256": "327f2603a4e69904c202da897018f0b5f3dd3ac2809c47fe53926f876c6609a5",
+      "sourceSha256": "0c6cd7f9eae39daa39ca02c9330a5e7fdfde2ba34a325bf16bac9343023b3af4"
+    },
+    {
+      "fileName": "jiangnan-water-town.jpg",
+      "bytes": 513197,
+      "sha256": "4c7746ea81d4a1096cbbf05dc0794efdfae5be5684fc11596e8b9e29675ed55e",
+      "sourceSha256": "15182db5cc1115d5aa19338fc2f33371a378b437de981c7e5683782d0d97be43"
+    },
+    {
+      "fileName": "shanghai-blue-hour.jpg",
+      "bytes": 339045,
+      "sha256": "6320cdce900ba900a57c233b82a8de9fca21505c3f9fb011ac9bb7abb896e56e",
+      "sourceSha256": "3b5aac57ec7e9a6321546c61a7de948039e8e77e31bf7191c80d197b88917b5e"
+    },
+    {
+      "fileName": "sichuan-jiuzhaigou.jpg",
+      "bytes": 585809,
+      "sha256": "8d12647932bf9a89da2b93f383c28a7f5104fb2f6ccc398445e32ea8fe3fbc08",
+      "sourceSha256": "dda2fdf312a646581a5dd9552fbfedeb48d3a421926969c373fa99f3cf008340"
+    },
+    {
+      "fileName": "wuhan-yellow-crane-tower.jpg",
+      "bytes": 390001,
+      "sha256": "90e044baf8607ec92b97be8dfaa47dd556c00bac0863b6f21d7c026c9b36a579",
+      "sourceSha256": "cd7a69892c030ef84ba57af11091a156603637b8abb502259211301c1d8b3edf"
+    },
+    {
+      "fileName": "yunnan-meili-mountain.jpg",
+      "bytes": 423183,
+      "sha256": "4ab135e0c444f34c89b3366a57f0a8d4c194acbd8abd241cccaea42014c312c0",
+      "sourceSha256": "c92c18e28a0e5693def4bb40c55b152d7acb2a2c9eb1ee8b30cc433d78d21bd4"
+    }
+  ],
+  "encoding": "PNG lossless recompression for the PNG file, JPEG quality 92 (progressive, no EXIF) for the JPEG files. No capture time, GPS or C2PA byte-signature blocks are carried into the distributed files."
+}
