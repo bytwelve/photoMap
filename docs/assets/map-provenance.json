@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "verifiedOn": "2026-09-10",
+  "verification": "Historical generator code and frozen manifests were inspected. Historical inputs and runtime outputs were hashed. The generators were not rerun.",
+  "runtimeAssets": [
+    {
+      "kind": "terrain",
+      "file": "resources/map/terrain-expanded-uniform-r16.png",
+      "sha256": "aa76fa763b2a9c2375580efec94b975f9b385e0bf03f1ec5c9646110d80f7fbc",
+      "input": {
+        "file": "terrain-expanded-r14.png",
+        "sha256": "028222cb15b42dc18de5a1c36b73df23a318e76cc98898823cc53a5d7f3c77b8"
+      },
+      "transformation": "legacy-piecewise-to-uniform-latitude-warp"
+    },
+    {
+      "kind": "coastRepair",
+      "file": "resources/map/terrain-coast-repair-uniform-r16.png",
+      "sha256": "190f83fa67bda13ed5a0b7b601fabd615547d54a0cf270e8e92de89e409039bc",
+      "input": {
+        "file": "terrain-coast-repair-r15.png",
+        "sha256": "b1c9d96d5f6a9eeb4ebe3ea114139656d6df5200b8a848d4220c97ecc4c44f9a"
+      },
+      "transformation": "legacy-piecewise-to-uniform-latitude-warp"
+    },
+    {
+      "kind": "provinceLines",
+      "file": "resources/map/province-lines-uniform-r16.png",
+      "sha256": "8ca854be5a9ed74987b2d30f65f278ed40ebaaf6d56cfefcf5c93b90f57b455f",
+      "input": {
+        "file": "province-lines-r13.png",
+        "sha256": "9ed8209887861a88b3abcc6be304976c852af83530ff8e42573a2fdd411751ed"
+      },
+      "transformation": "legacy-piecewise-to-uniform-latitude-warp"
+    },
+    {
+      "kind": "nationalOutline",
+      "file": "resources/map/national-outline-uniform-r16.png",
+      "sha256": "3d77d12a965b25ad574797afca61a3319bb5c355f5ede536e09c49619ba8f9b1",
+      "input": {
+        "file": "national-outline-r12.png",
+        "sha256": "8a169de9ec58ebc773448f3cbbe32b6b6a07c549f39dfa73846616c2d25de447"
+      },
+      "transformation": "legacy-piecewise-to-uniform-latitude-warp"
+    }
+  ],
+  "projection": {
+    "west": 69.0,
+    "east": 141.0,
+    "north": 57.0,
+    "latitudeScale": 30.0,
+    "mapWidth": 2000.0,
+    "mapHeight": 1710.0,
+    "hasLatitudeBreakpoint": false
+  },
+  "coastRepair": {
+    "strategy": "natural-earth-land-sea-classification-mismatch",
+    "file": "terrain-coast-repair-r15.png",
+    "sha256": "b1c9d96d5f6a9eeb4ebe3ea114139656d6df5200b8a848d4220c97ecc4c44f9a",
+    "baseTerrain": {
+      "file": "terrain-expanded-r14.png",
+      "sha256": "028222cb15b42dc18de5a1c36b73df23a318e76cc98898823cc53a5d7f3c77b8"
+    },
+    "naturalEarth": {
+      "version": "v5.1.2",
+      "sourceRepository": "https://github.com/nvkelso/natural-earth-vector/tree/v5.1.2/geojson",
+      "termsUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+      "termsVerifiedOn": "2026-09-10",
+      "licenseStatus": "public-domain",
+      "inputs": [
+        {
+          "kind": "land",
+          "file": "natural-earth-land.geojson",
+          "sha256": "1ac90796408bc6ad6911d69448485d3c4dbf2190370080368a09976e1c9f7416",
+          "features": 11,
+          "upstreamFile": "geojson/ne_10m_land.geojson"
+        },
+        {
+          "kind": "coastline",
+          "file": "natural-earth-coastline.geojson",
+          "sha256": "6f75ae0e0de157b14946e2255eb1f5486d9a13819032e26d4610852d296788f6",
+          "features": 4133,
+          "upstreamFile": "geojson/ne_10m_coastline.geojson"
+        },
+        {
+          "kind": "ocean",
+          "file": "natural-earth-ocean.geojson",
+          "sha256": "f9696a1337c746a0f6c8c13bc60d0f230d2ef8d105198d5657726c8f8e763fc2",
+          "features": 1,
+          "upstreamFile": "geojson/ne_10m_ocean.geojson"
+        }
+      ]
+    },
+    "chinaExclusionMask": {
+      "file": "china-provinces.geojson",
+      "sha256": "3af8294f9ad61cc2bf84c1bb7e4bbf86a6336c68d754b699a0e6ddc33ef81486",
+      "sourceUrl": "https://cloudcenter.tianditu.gov.cn/administrativeDivision",
+      "use": "Rasterized Chinese province polygons excluded from coastline correction",
+      "redistributionBasis": "not-verified"
+    }
+  },
+  "historicalEvidence": [
+    {
+      "file": "scripts/generate-uniform-projection-r16.py",
+      "sha256": "cc15c372e48210342cf2570c562ca72e9b4ee7abe635efdaf29333830b0eea20"
+    },
+    {
+      "file": "scripts/generate-terrain-coast-repair.py",
+      "sha256": "61608401726dfbf9a2687daf29a834af2bffab454974c9a99b822e89ca7736eb"
+    },
+    {
+      "file": "public/map/uniform-projection-r16.json",
+      "sha256": "228cdc13d05bf721b6520e5e60221eff8c532753ba19de3f0c2088a88e2520ab"
+    },
+    {
+      "file": "public/map/terrain-coast-repair-r15.json",
+      "sha256": "c2fc5601636f99b2236e2f97920792f4d5200b25f39b0011bc86b36ea34bbe25"
+    }
+  ],
+  "evidenceScope": "Historical filenames identify archived evidence; the old prototype, raw data and source PNGs are not included in this repository. This record is a provenance summary, not a standalone regeneration tool.",
+  "unresolved": [
+    "Original AI tool, model, prompt and reference inputs are not recorded.",
+    "Original generation of province-lines-r13.png and national-outline-r12.png is not documented.",
+    "Applicable Tianditu terms for the administrative region catalog and province exclusion-mask use have not been verified.",
+    "Fresh acquisition of the exact province and city files from the official download page has not been verified."
+  ]
+}

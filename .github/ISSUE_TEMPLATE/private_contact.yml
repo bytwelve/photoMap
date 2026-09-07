@@ -1,0 +1,17 @@
+name: 请求私密联系渠道
+description: 仅请求维护者提供私密渠道，不提交安全或行为事件细节
+title: "请求维护者提供私密联系渠道"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **本表单会创建公开 Issue。** 请勿附上漏洞、事件经过、个人身份、邮箱、照片、位置、日志、私信截图或利用代码。
+        如果仓库已经启用 Security → Report a vulnerability，请使用该入口报告软件漏洞。
+        提交后请等待维护者提供可用的私密渠道，再通过该渠道发送报告。
+  - type: checkboxes
+    id: contact_request
+    attributes:
+      label: 联系请求
+      options:
+        - label: 我希望维护者提供私密联系渠道；本 Issue 不包含报告细节或个人信息。
+          required: true

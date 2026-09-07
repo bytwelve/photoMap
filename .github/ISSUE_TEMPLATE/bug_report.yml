@@ -1,0 +1,65 @@
+name: 缺陷报告
+description: 应用行为与预期不符
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈。**请不要附带真实私人照片、含位置信息的截图或完整本机路径**；安全问题请按 SECURITY.md 私密报告。
+  - type: input
+    id: version
+    attributes:
+      label: 应用版本
+      placeholder: "1.0.0（窗口页脚 / release-build.json）"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: 安装方式
+      options:
+        - Squirrel 安装版
+        - 便携版
+        - 源码运行（npm run start）
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Windows 版本
+      placeholder: "Windows 11 23H2 (22631.x)"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 选择媒体目录 …
+        2. 切换到 …
+        3. 点击 …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期行为
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+    validations:
+      required: true
+  - type: textarea
+    id: media
+    attributes:
+      label: 涉及的媒体类型
+      description: 格式、是否实况照片、大致数量；不要上传原文件
+  - type: textarea
+    id: logs
+    attributes:
+      label: 诊断信息
+      description: 应用数据目录下的诊断日志片段（已脱敏），或控制台输出
+      render: text

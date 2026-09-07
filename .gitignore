@@ -35,6 +35,8 @@ Desktop.ini
 # 本地数据与发布归档
 PhotoMapData/
 releases/
+# 自行下载的上游地图数据，不随开源仓库分发
+*.geojson
 
 # 密钥与证书
 .env
@@ -45,5 +47,6 @@ releases/
 *.pfx
 *.p12
 
-# 自行下载的上游地图数据，不随开源仓库分发
-*.geojson
+# 本地过程记录；公开素材来源集中在 ASSETS.md
+/docs/HISTORY_RECONSTRUCTION.md
+/docs/images/*.prompt.md

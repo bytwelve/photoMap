@@ -29,7 +29,8 @@
     "lint:fix": "eslint . --fix",
     "unused:check": "knip",
     "licenses:check": "node scripts/build/collect-licenses.cjs --check",
-    "check": "npm run typecheck && npm run lint && npm run unused:check && npm test && npm run licenses:check"
+    "docs:check": "node scripts/check-docs.cjs",
+    "check": "npm run typecheck && npm run lint && npm run unused:check && npm test && npm run licenses:check && npm run docs:check"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",

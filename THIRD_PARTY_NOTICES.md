@@ -26,3 +26,18 @@ ExifReader 的锁定来源归档地址保存在 `package-lock.json` 的 `node_mo
 
 [产物检查脚本](scripts/build/verify-package.cjs) 将应用可执行文件旁的这两份文件与当前 Electron 分发目录逐字节比较。[Squirrel 配置](scripts/build/squirrel-config.json) 显式增加 Chromium 许可证文件，[安装器构建脚本](scripts/create-squirrel.cjs) 对解包后的应用再次执行产物检查。
 
+## 随包文件与检查边界
+
+现有构建流程先生成以下文件，再通过[打包配置](forge.config.ts) 复制至应用的 `resources/licenses`：
+
+- `LICENSE-PhotoMap.txt`：项目许可证。
+- `THIRD_PARTY_NOTICES.md`：本说明。
+- `ASSETS.md`：素材清单与使用说明。
+- `THIRD_PARTY_LICENSES.txt`：所收集 JavaScript 运行时依赖的完整许可文本。
+- `manifest.json`：组件版本、许可文件、来源归档地址及生成文件的大小和 SHA-256。
+
+生成随包 Markdown 时，项目许可链接会转换为实际的 `LICENSE-PhotoMap.txt`，两份说明保留相互链接；仅存在于源码中的脚本、数据和文档引用会转换为带有“源码路径”的文字。原始源码文档仍保留可点击的源码链接。
+
+`npm run licenses:check` 检查版本与许可证输入，不写入构建产物。`npm run package:verify -- <实际应用目录>` 检查实际随包文件与当前输入是否一致，并检查随包 Markdown 的本地链接和章节是否存在。
+
+上述检查验证文件存在性、版本和内容一致性；安装包验收以对应构建的实际检查结果为准。
