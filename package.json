@@ -1,7 +1,7 @@
 {
   "name": "photo-map",
   "productName": "用照片拼地图",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "description": "完全离线的 Windows 照片地图桌面应用",
   "author": "PhotoMap contributors",
   "main": ".webpack/main",

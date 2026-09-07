@@ -84,7 +84,7 @@ npm run e2e:map
 ```json
 {
   "schemaVersion": 1,
-  "applicationVersion": "0.3.0",
+  "applicationVersion": "1.0.0",
   "reviewedBy": "<实际检查人>",
   "reviewedAtUtc": "<实际 UTC 时间>",
   "statement": "<验收范围与结论>",
@@ -101,7 +101,7 @@ npm run e2e:map
 pwsh -NoProfile -File ./scripts/release/assemble-release.ps1 `
   -FastGateResultRoot '<门禁结果目录>' `
   -E2EResultRoot '<完整地图 E2E 结果目录>' `
-  -ExpectedVersion '0.3.0' `
+  -ExpectedVersion '1.0.0' `
   -ReleaseAcceptancePath '.local/release-acceptance.json'
 ```
 
