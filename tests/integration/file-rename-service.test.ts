@@ -1,4 +1,4 @@
-import { link, lstat, mkdir, mkdtemp, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
+import { link, lstat, mkdir, mkdtemp, readFile, readdir, realpath, rename, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -14,15 +14,16 @@ import {
 const temporaryRoots: string[] = [];
 
 async function fixtureRoot(): Promise<string> {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'photo-map-rename-'));
+  // Match validateLibraryRoot: Windows TEMP may contain an 8.3 short-path alias.
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'photo-map-rename-')));
   temporaryRoots.push(root);
   return root;
 }
 
 afterEach(async () => {
   while (temporaryRoots.length > 0) {
-    const target = temporaryRoots.pop()!;
-    expect(path.dirname(target)).toBe(path.resolve(os.tmpdir()));
+    const target = await realpath(temporaryRoots.pop()!);
+    expect(path.dirname(target)).toBe(await realpath(os.tmpdir()));
     expect(path.basename(target).startsWith('photo-map-rename-')).toBe(true);
     await rm(target, { recursive: true, force: true });
   }

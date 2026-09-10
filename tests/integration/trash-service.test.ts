@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { lstat, mkdir, mkdtemp, readFile, rename, rm, utimes, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, mkdtemp, readFile, realpath, rename, rm, utimes, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -17,10 +17,17 @@ import { LibraryScanner } from '../../src/main/services/library-scan/library-sca
 
 const temporaryRoots: string[] = [];
 
+async function fixtureRoot(): Promise<string> {
+  // Match validateLibraryRoot: Windows TEMP may contain an 8.3 short-path alias.
+  const root = await realpath(await mkdtemp(path.join(os.tmpdir(), 'photo-map-trash-fake-')));
+  temporaryRoots.push(root);
+  return root;
+}
+
 afterEach(async () => {
   while (temporaryRoots.length > 0) {
-    const target = temporaryRoots.pop()!;
-    expect(path.dirname(target)).toBe(path.resolve(os.tmpdir()));
+    const target = await realpath(temporaryRoots.pop()!);
+    expect(path.dirname(target)).toBe(await realpath(os.tmpdir()));
     expect(path.basename(target).startsWith('photo-map-trash-fake-')).toBe(true);
     await rm(target, { recursive: true, force: true });
   }
@@ -96,8 +103,7 @@ async function recordFor(rootPath: string, fileName: string, companionFileName?:
 }
 
 async function liveFixture(): Promise<{ root: string; record: PhotoFileRecord; repository: FakeTrashRepository }> {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'photo-map-trash-fake-'));
-  temporaryRoots.push(root);
+  const root = await fixtureRoot();
   await Promise.all([
     writeFile(path.join(root, 'live.jpg'), 'still'),
     writeFile(path.join(root, 'live.mov'), 'motion'),
@@ -110,8 +116,7 @@ async function liveFixture(): Promise<{ root: string; record: PhotoFileRecord; r
 
 describe('TDD-CONTRACT-RECYCLE-001 fake recycle-bin settlement', () => {
   it('prd_fr_022__recycle_batch_is_partial__settles_items__only_moved_becomes_trashed', async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), 'photo-map-trash-fake-'));
-    temporaryRoots.push(root);
+    const root = await fixtureRoot();
     const movedPath = path.join(root, 'moved.jpg');
     const deniedPath = path.join(root, 'denied.jpg');
     const notFoundPath = path.join(root, 'not-found.jpg');
@@ -156,8 +161,7 @@ describe('TDD-CONTRACT-RECYCLE-001 fake recycle-bin settlement', () => {
   });
 
   it('prd_ac_011__apple_live_photo__confirmed_trash__moves_motion_companion_then_still_as_one_item', async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), 'photo-map-trash-fake-'));
-    temporaryRoots.push(root);
+    const root = await fixtureRoot();
     const stillPath = path.join(root, 'live.jpg');
     const motionPath = path.join(root, 'live.mov');
     await Promise.all([
