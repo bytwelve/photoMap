@@ -84,6 +84,8 @@ export async function main() {
     assertCondition(photo?.note === note && photo.fileName === '公开验收照片.png'
       && photo.location?.cityGb === '156420100' && photo.typeIds.includes(checks.annotation.typeId), 'Annotations or rename did not survive restart.');
     await waitForValue(second.client, 'window.photoMap.getSettings().then(r => r.ok ? r.value : null)', settings => settings?.mode === 'batch' && settings.filters.search === closingSearch);
+    // Backend state can be ready before React mounts and restores the search field.
+    await waitForValue(second.client, 'document.querySelector(".search-field input")?.value', value => value === closingSearch);
     checks.pendingSettingsSavedOnClose = true;
     assertCondition(await evaluate(second.client, setInputValueExpression('.search-field input', '')), 'Search field missing after restart.');
     await waitForValue(second.client, 'document.querySelectorAll("[data-testid=batch-grid] .photo-card").length', count => count === 7);
