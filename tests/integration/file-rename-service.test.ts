@@ -104,7 +104,8 @@ async function expectMissing(filePath: string): Promise<void> {
   await expect(lstat(filePath)).rejects.toMatchObject({ code: 'ENOENT' });
 }
 
-describe('file rename service filesystem and catalog contract', () => {
+// Real Windows moves launch PowerShell; shared CI runners can take more than 5 seconds.
+describe('file rename service filesystem and catalog contract', { timeout: 20_000 }, () => {
   it('renames_an_ordinary_photo_without_changing_its_bytes_and_updates_the_catalog_paths', async () => {
     const root = await fixtureRoot();
     const originalPath = path.join(root, 'original.jpg');
