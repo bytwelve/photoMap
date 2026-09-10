@@ -7,6 +7,14 @@
   "main": ".webpack/main",
   "private": true,
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bytwelve/photoMap.git"
+  },
+  "homepage": "https://github.com/bytwelve/photoMap#readme",
+  "bugs": {
+    "url": "https://github.com/bytwelve/photoMap/issues"
+  },
   "engines": {
     "node": "24.19.0"
   },
