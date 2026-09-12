@@ -4,7 +4,9 @@
 
 ## 环境
 
-Windows 10 / 11 x64，Node.js `24.19.0`，npm `11.12.1`，PowerShell 7.2+。版本来自根目录 `.node-version` 和 `package.json`。
+Windows 10 / 11 x64，Node.js `>=24.15.0 <25`，npm `>=11.0.0 <12`，PowerShell 7.2+。本地构建兼容范围来自 `package.json` 的 `engines`，`npm run make` 按此范围检查，不要求精确匹配小版本或补丁版本。
+
+CI 与正式发布仍使用 `.node-version` 中的 Node.js `24.19.0` 和 `package.json` 的 `packageManager` 中的 npm `11.12.1`。`verify-local.ps1` 与正式发布组装脚本保留精确版本检查，用于生成和核对发布验收记录；普通用户从源码生成安装包或便携版无需执行这些发布脚本。
 
 在包含 `package.json` 的项目目录中打开 PowerShell，安装依赖：
 

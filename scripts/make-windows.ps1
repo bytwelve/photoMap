@@ -11,15 +11,11 @@ if ($PSVersionTable.PSVersion -lt [version]'7.2') {
 
 $appRoot = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..')).Path
 $package = Get-Content -LiteralPath (Join-Path $appRoot 'package.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-$requiredNodeVersion = (Get-Content -LiteralPath (Join-Path $appRoot '.node-version') -Raw -Encoding UTF8).Trim()
-$actualNodeVersion = (@(& node --version 2>&1) -join "`n").Trim().TrimStart('v')
-if ($LASTEXITCODE -ne 0 -or $actualNodeVersion -ne $requiredNodeVersion) {
-  throw "Node.js $requiredNodeVersion is required; current runtime is $actualNodeVersion."
-}
-$requiredNpmVersion = ([string]$package.packageManager).Replace('npm@', '')
-$actualNpmVersion = (@(& npm --version 2>&1) -join "`n").Trim()
-if ($LASTEXITCODE -ne 0 -or $actualNpmVersion -ne $requiredNpmVersion) {
-  throw "npm $requiredNpmVersion is required; current runtime is $actualNpmVersion."
+. (Join-Path $PSScriptRoot 'build-toolchain.ps1')
+foreach ($tool in @('node', 'npm')) {
+  $actualVersion = (@(& $tool --version 2>&1) -join "`n").Trim().TrimStart('v')
+  if ($LASTEXITCODE -ne 0) { throw "Unable to read $tool version: $actualVersion" }
+  Assert-CompatibleBuildVersion -Tool $tool -ActualVersion $actualVersion -RequiredRange $package.engines.$tool
 }
 . (Join-Path $PSScriptRoot 'source-identity.ps1')
 $buildInputFiles = @(Get-ProductBuildInputFiles -AppRoot $appRoot)

@@ -80,7 +80,7 @@ PhotoMap 有 **便携式** 和 **安装包** 两种使用方式，拼图、整�
 
 ## 从源码构建
 
-准备 **Node.js 24.19.0、npm 11.12.1**；生成安装包还需要 **PowerShell 7.2+**。在包含 `package.json` 的项目目录中打开 PowerShell，先安装依赖：
+准备 **Node.js 24.15.0 或更高的 24.x 版本、npm 11.x**；生成安装包还需要 **PowerShell 7.2+**。本地构建不要求精确匹配补丁版本；CI 与正式发布使用固定的 Node.js 24.19.0、npm 11.12.1。在包含 `package.json` 的项目目录中打开 PowerShell，先安装依赖：
 
 ```powershell
 npm ci
