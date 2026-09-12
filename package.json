@@ -44,9 +44,9 @@
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
     "electron-squirrel-startup": "1.0.1",
-    "exifreader": "4.44.0",
-    "react": "19.2.7",
-    "react-dom": "19.2.7"
+    "exifreader": "4.44.1",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
     "@electron-forge/cli": "7.11.2",
@@ -58,8 +58,8 @@
     "@eslint/js": "10.0.1",
     "@types/electron-squirrel-startup": "1.0.2",
     "@types/node": "24.10.1",
-    "@types/react": "19.2.2",
-    "@types/react-dom": "19.2.2",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
     "@vercel/webpack-asset-relocator-loader": "1.7.3",
     "css-loader": "7.1.2",
     "electron": "43.4.1",
