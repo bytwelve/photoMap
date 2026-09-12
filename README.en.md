@@ -70,9 +70,9 @@ PhotoMap offers two ways to use the app: **portable** and **installed**. Both ha
 | Version | How to start | Choose this if you want to… |
 | --- | --- | --- |
 | **Portable (no installation)** | Keep the entire app folder in a writable location and open `PhotoMap.exe` inside it; do not copy just the `.exe` | Choose where the app folder lives and open it directly |
-| **Installer (install before use)** | Run `PhotoMap-Setup.exe`, then open PhotoMap after installation | Install the app like a regular Windows program |
+| **Installer (install before use)** | Run the downloaded installer, then open PhotoMap after installation | Install the app like a regular Windows program |
 
-Both packages are currently obtained by [building from source](#build-from-source). If you already have a built package, follow the table above; you do not need to install Node.js or run npm commands.
+Download the Windows x64 installer or portable ZIP from **[Releases](https://github.com/bytwelve/photoMap/releases/latest)** and follow the table above; you do not need to install Node.js or run npm commands. The release page also includes checksums and release notes. You can also [build from source](#build-from-source).
 
 ## Before you start
 
