@@ -62,7 +62,7 @@
     "@types/react-dom": "19.2.2",
     "@vercel/webpack-asset-relocator-loader": "1.7.3",
     "css-loader": "7.1.2",
-    "electron": "43.4.1",
+    "electron": "44.2.0",
     "electron-winstaller": "5.4.4",
     "eslint": "10.10.0",
     "eslint-plugin-react-hooks": "7.1.1",
